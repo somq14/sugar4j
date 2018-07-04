@@ -28,7 +28,7 @@ public final class Model {
     return var;
   }
 
-  public void addConstrant(@NonNull Constraint constraint) {
+  public void addConstraint(@NonNull Constraint constraint) {
     constraint.feasible(this);
     constraints.add(constraint);
   }

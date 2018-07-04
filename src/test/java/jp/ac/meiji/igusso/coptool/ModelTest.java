@@ -19,6 +19,6 @@ public class ModelTest {
                           .addTerm(2, var2, 2)
                           .addTerm(3, var3, 3)
                           .build();
-    model.addConstrant(cons);
+    model.addConstraint(cons);
   }
 }
