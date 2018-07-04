@@ -1,4 +1,4 @@
-package jp.ac.meiji.ce175027.coptool;
+package jp.ac.meiji.igusso.coptool;
 
 import lombok.NonNull;
 import lombok.Value;
