@@ -26,6 +26,11 @@ public class VariableImplTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
+  public void testInvalidDomain() throws Exception {
+    VariableImpl v = new VariableImpl("v1_2", asList(1, 1, 3));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
   public void testWrongName() throws Exception {
     VariableImpl v = new VariableImpl("_v1_2", asList(1, 2, 3));
   }
