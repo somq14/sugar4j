@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.Value;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Value
@@ -20,13 +21,18 @@ public final class LinearConstraint implements Constraint {
       List<Integer> values, Comparator op, int rhs, int weight) {
     this.name = name;
     this.weight = weight;
-    this.coeffs = coeffs;
-    this.variables = variables;
-    this.values = values;
+    this.coeffs = Collections.unmodifiableList(new ArrayList<>(coeffs));
+    this.variables = Collections.unmodifiableList(new ArrayList<>(variables));
+    this.values = Collections.unmodifiableList(new ArrayList<>(values));
     this.op = op;
     this.rhs = rhs;
   }
 
+  public int size() {
+    return variables.size();
+  }
+
+  @Override
   public boolean feasible(Model model) {
     List<Variable> modelVariables = model.getVariables();
     for (Variable v : variables) {
@@ -35,6 +41,11 @@ public final class LinearConstraint implements Constraint {
       }
     }
     return true;
+  }
+
+  @Override
+  public List<String> encode(ModelEncoder encoder) {
+    return encoder.encode(this);
   }
 
   public static Builder of(String name, Comparator op, int rhs) {
@@ -60,6 +71,7 @@ public final class LinearConstraint implements Constraint {
       }
       weight = Math.max(-1, weight);
 
+      this.name = name;
       this.op = op;
       this.rhs = rhs;
       this.weight = weight;
