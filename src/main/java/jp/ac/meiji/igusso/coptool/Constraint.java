@@ -1,5 +1,6 @@
 package jp.ac.meiji.igusso.coptool;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 public interface Constraint {
@@ -10,4 +11,6 @@ public interface Constraint {
   public int getWeight();
 
   public boolean feasible(Model model);
+
+  public List<String> encode(ModelEncoder encoder);
 }
