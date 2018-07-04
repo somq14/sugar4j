@@ -8,4 +8,6 @@ public interface Constraint {
   public String getName();
 
   public int getWeight();
+
+  public boolean feasible(Model model);
 }

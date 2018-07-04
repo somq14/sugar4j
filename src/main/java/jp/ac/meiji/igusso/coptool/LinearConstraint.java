@@ -27,6 +27,16 @@ public final class LinearConstraint implements Constraint {
     this.rhs = rhs;
   }
 
+  public boolean feasible(Model model) {
+    List<Variable> modelVariables = model.getVariables();
+    for (Variable v : variables) {
+      if (!modelVariables.contains(v)) {
+        throw new IllegalStateException("Variable " + v + " Is Not In Model");
+      }
+    }
+    return true;
+  }
+
   public static Builder of(String name, Comparator op, int rhs) {
     return new Builder(name, op, rhs, -1);
   }
