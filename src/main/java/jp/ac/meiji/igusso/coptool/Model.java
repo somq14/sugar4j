@@ -28,6 +28,22 @@ public final class Model {
     return var;
   }
 
+  public Variable addVariable(@NonNull String name, int domainMin, int domainMax) {
+    if (domainMin > domainMax) {
+      throw new IllegalArgumentException(
+          "Invalid Domain Range: [" + domainMin + ", " + domainMax + ")");
+    }
+    List<Integer> domain = new ArrayList<>(domainMax - domainMin);
+    for (int i = domainMin; i < domainMax; i++){
+      domain.add(i);
+    }
+    return addVariable(name, domain);
+  }
+
+  public Variable addVariable(@NonNull String name, int domainSize) {
+    return addVariable(name, 0, domainSize - 1);
+  }
+
   public void addConstraint(@NonNull Constraint constraint) {
     constraint.feasible(this);
     constraints.add(constraint);
