@@ -78,6 +78,19 @@ public final class ScopModelEncoder implements ModelEncoder {
     return Arrays.asList(cons);
   }
 
+  public List<String> encode(AllDifferentConstraint constraint) {
+    StringBuilder varExp = new StringBuilder();
+    for (int i = 0; i < constraint.size(); i++) {
+      String varName = constraint.getVariables().get(i).getName();
+      varExp.append(' ').append(varName);
+    }
+
+    String weightExp = constraint.getWeight() < 0 ? "inf" : constraint.getWeight() + "";
+    String cons = String.format(
+        "%s: weight=%s type=alldiff %s;", constraint.getName(), weightExp, varExp.toString());
+    return Arrays.asList(cons);
+  }
+
   @Override
   public List<String> encode(Model model) {
     List<String> body = new ArrayList<>();

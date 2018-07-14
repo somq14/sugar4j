@@ -76,7 +76,6 @@ public final class SugarModelEncoder implements ModelEncoder {
       return Arrays.asList();
     }
 
-
     List<String> res = new ArrayList<>();
     res.add("; objective declaration");
 
@@ -127,7 +126,7 @@ public final class SugarModelEncoder implements ModelEncoder {
         }
         int d1 = variable.getDomain().get(i);
         int d2 = variable.getDomain().get(j);
-        res.add(format("(and (not %s) (not %s))", varName(variable, d1), varName(variable, d2),
+        res.add(format("(or (not %s) (not %s))", varName(variable, d1), varName(variable, d2),
             variable.getName()));
       }
     }
@@ -229,6 +228,34 @@ public final class SugarModelEncoder implements ModelEncoder {
     res.add("");
 
     return res;
+  }
+
+  public List<String> encode(AllDifferentConstraint constraint) {
+    if (constraint.getWeight() >= 0) {
+      throw new IllegalStateException("Soft AllDifferentConstraint is not supported");
+    }
+
+    List<String> res = new ArrayList<>();
+    res.add(format("; constraint %s", constraint.getName()));
+
+    List<Variable> vars = constraint.getVariables();
+    if (vars.isEmpty()) {
+      return Collections.unmodifiableList(res);
+    }
+
+    List<Integer> domain = constraint.getVariables().get(0).getDomain();
+
+    for (int d : domain) {
+      for (int i = 0; i < vars.size(); i++) {
+        for (int j = i + 1; j < vars.size(); j++) {
+          String v1Exp = varName(vars.get(i), d);
+          String v2Exp = varName(vars.get(j), d);
+          res.add(format("(or (not %s) (not %s))", v1Exp, v2Exp));
+        }
+      }
+    }
+
+    return Collections.unmodifiableList(res);
   }
 
   @Override

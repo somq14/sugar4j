@@ -7,6 +7,8 @@ public interface ModelEncoder {
 
   public List<String> encode(LinearConstraint constraint);
 
+  public List<String> encode(AllDifferentConstraint constraint);
+
   public List<String> encode(Model model);
 }
 
