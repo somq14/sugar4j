@@ -79,7 +79,8 @@ public class SchedulingProblemParser {
       String id = csv[0];
       int length = Integer.valueOf(csv[1]);
 
-      List<String> notFollow = csv.length == 3 ? Arrays.asList(csv[2].split("\\|")) : Arrays.asList();
+      List<String> notFollow =
+          csv.length == 3 ? Arrays.asList(csv[2].split("\\|")) : Arrays.asList();
 
       shifts.put(id, new Shift(id, length, notFollow));
 

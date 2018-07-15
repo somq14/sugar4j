@@ -34,7 +34,7 @@ public final class Model {
           "Invalid Domain Range: [" + domainMin + ", " + domainMax + ")");
     }
     List<Integer> domain = new ArrayList<>(domainMax - domainMin);
-    for (int i = domainMin; i < domainMax; i++){
+    for (int i = domainMin; i < domainMax; i++) {
       domain.add(i);
     }
     return addVariable(name, domain);
