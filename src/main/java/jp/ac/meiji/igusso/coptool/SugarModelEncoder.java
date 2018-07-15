@@ -86,12 +86,12 @@ public final class SugarModelEncoder implements ModelEncoder {
     res.add(format("(int _P 0 %d)", maxPena));
 
     StringBuilder penaExp = new StringBuilder();
-    penaExp.append("(= _P (+");
+    penaExp.append(format("(= _P (+%n"));
     for (int i = 0; i < penaVariableNames.size(); i++) {
       int weight = penaWeights.get(i);
       String name = penaVariableNames.get(i);
 
-      penaExp.append(' ').append(format("(* %d %s)", weight, name));
+      penaExp.append("  ").append(format("(* %d %s)%n", weight, name));
     }
     penaExp.append("))");
 
