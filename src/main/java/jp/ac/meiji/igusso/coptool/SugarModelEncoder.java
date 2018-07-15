@@ -120,10 +120,7 @@ public final class SugarModelEncoder implements ModelEncoder {
 
     int domainSize = variable.getDomain().size();
     for (int i = 0; i < domainSize; i++) {
-      for (int j = 0; j < domainSize; j++) {
-        if (i == j) {
-          continue;
-        }
+      for (int j = i + 1; j < domainSize; j++) {
         int d1 = variable.getDomain().get(i);
         int d2 = variable.getDomain().get(j);
         res.add(format("(or (not %s) (not %s))", varName(variable, d1), varName(variable, d2),
