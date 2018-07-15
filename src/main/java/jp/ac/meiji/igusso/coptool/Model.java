@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +34,7 @@ public final class Model {
       throw new IllegalArgumentException(
           "Invalid Domain Range: [" + domainMin + ", " + domainMax + ")");
     }
+
     List<Integer> domain = new ArrayList<>(domainMax - domainMin + 1);
     for (int i = domainMin; i <= domainMax; i++) {
       domain.add(i);
@@ -45,8 +47,21 @@ public final class Model {
   }
 
   public void addConstraint(@NonNull Constraint constraint) {
+    for (Constraint cons : constraints) {
+      if (cons.getName().equals(constraint.getName())) {
+        throw new IllegalArgumentException(
+            "The Constraint Already Has Been Registered: " + constraint.getName());
+      }
+    }
+
     constraint.feasible(this);
     constraints.add(constraint);
+  }
+
+  public void addConstraints(@NonNull Collection<Constraint> constraints) {
+    for (Constraint cons : constraints) {
+      addConstraint(cons);
+    }
   }
 
   public List<Variable> getVariables() {
