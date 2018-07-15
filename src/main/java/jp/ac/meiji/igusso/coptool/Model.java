@@ -33,8 +33,8 @@ public final class Model {
       throw new IllegalArgumentException(
           "Invalid Domain Range: [" + domainMin + ", " + domainMax + ")");
     }
-    List<Integer> domain = new ArrayList<>(domainMax - domainMin);
-    for (int i = domainMin; i < domainMax; i++) {
+    List<Integer> domain = new ArrayList<>(domainMax - domainMin + 1);
+    for (int i = domainMin; i <= domainMax; i++) {
       domain.add(i);
     }
     return addVariable(name, domain);
