@@ -17,8 +17,27 @@ public final class SugarModelEncoder implements ModelEncoder {
 
   private SugarModelEncoder() {}
 
-  private static String varName(Variable variable, int value) {
+  private static String varToString(Variable variable, int value) {
     return format("%s__%d", variable.getName(), value);
+  }
+
+  private static String domainToString(List<Integer> domain) {
+    StringBuilder res = new StringBuilder();
+    res.append('(');
+
+    int seqBegin = 0;
+    while (seqBegin < domain.size()) {
+      int seqEnd = seqBegin;
+      while (seqEnd + 1 < domain.size() && domain.get(seqEnd) + 1 == domain.get(seqEnd + 1)) {
+        seqEnd++;
+      }
+      res.append(format(" (%d %d)", domain.get(seqBegin), domain.get(seqEnd)));
+
+      seqBegin = seqEnd + 1;
+    }
+
+    res.append(" )");
+    return res.toString();
   }
 
   private static String opName(Comparator op) {
@@ -104,31 +123,21 @@ public final class SugarModelEncoder implements ModelEncoder {
   @Override
   public List<String> encode(Variable variable) {
     List<String> res = new ArrayList<>();
-    res.add("; variable " + variable.getName());
+
+    res.add(format("(int %s %s)", variable.getName(), domainToString(variable.getDomain())));
+
     for (Integer d : variable.getDomain()) {
-      res.add(format("(bool %s) ; %s", varName(variable, d), variable.getName() + " = " + d));
+      String intVarName = variable.getName();
+      String boolVarName = varToString(variable, d);
+
+      res.add(format("(bool %s) ; means %s = %d", boolVarName, intVarName, d));
+      res.add(format("(imp %s (<= %s %d))", boolVarName, intVarName, d));
+      res.add(format("(imp %s (>= %s %d))", boolVarName, intVarName, d));
+      res.add(format(
+          "(imp (and (<= %s %d) (>= %s %d)) %s)", intVarName, d, intVarName, d, boolVarName));
     }
 
-    StringBuilder orCons = new StringBuilder();
-    orCons.append("(or");
-    for (Integer d : variable.getDomain()) {
-      orCons.append(' ');
-      orCons.append(varName(variable, d));
-    }
-    orCons.append(")");
-    res.add(orCons.toString());
-
-    int domainSize = variable.getDomain().size();
-    for (int i = 0; i < domainSize; i++) {
-      for (int j = i + 1; j < domainSize; j++) {
-        int d1 = variable.getDomain().get(i);
-        int d2 = variable.getDomain().get(j);
-        res.add(format("(or (not %s) (not %s))", varName(variable, d1), varName(variable, d2),
-            variable.getName()));
-      }
-    }
     res.add("");
-
     return res;
   }
 
@@ -148,7 +157,7 @@ public final class SugarModelEncoder implements ModelEncoder {
       int coeff = constraint.getCoeffs().get(i);
       Variable var = constraint.getVariables().get(i);
       int val = constraint.getValues().get(i);
-      lhsExp.append(format(" (if %s %d 0)", varName(var, val), coeff));
+      lhsExp.append(format(" (if %s %d 0)", varToString(var, val), coeff));
     }
 
     if (constraint.getWeight() >= 0) {
@@ -250,8 +259,8 @@ public final class SugarModelEncoder implements ModelEncoder {
     for (int d : domain) {
       for (int i = 0; i < vars.size(); i++) {
         for (int j = i + 1; j < vars.size(); j++) {
-          String v1Exp = varName(vars.get(i), d);
-          String v2Exp = varName(vars.get(j), d);
+          String v1Exp = varToString(vars.get(i), d);
+          String v2Exp = varToString(vars.get(j), d);
           res.add(format("(or (not %s) (not %s))", v1Exp, v2Exp));
         }
       }
