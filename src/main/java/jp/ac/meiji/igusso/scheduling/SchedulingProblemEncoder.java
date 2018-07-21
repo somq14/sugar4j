@@ -339,7 +339,7 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int s = 1; s < C_MIN[i]; s++) {
         // ここでs日の連続勤務を許さないという制約を生成
-        for (int d = 0; d < D.length - (C_MIN[i] + 1); d++) {
+        for (int d = 0; d < D.length - (s + 1); d++) {
           String consName = format("C06_i%02d_s%02d_d%02d", i, s, d);
           LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.GE, -1);
 
@@ -370,7 +370,7 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int s = 1; s < O_MIN[i]; s++) {
         // ここでs日の連続休暇を許さないという制約を生成
-        for (int d = 0; d < D.length - (O_MIN[i] + 1); d++) {
+        for (int d = 0; d < D.length - (s + 1); d++) {
           String consName = format("C07_i%02d_s%02d_d%02d", i, s, d);
           LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.GE, 1 - s);
 

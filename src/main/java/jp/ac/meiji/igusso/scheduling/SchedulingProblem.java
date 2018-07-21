@@ -64,7 +64,7 @@ public final class SchedulingProblem {
     }
     res.add("");
 
-    res.add(format("SECTION_SHIFT_OFF_REQUESTS"));
+    res.add(format("SECTION_COVER"));
     for (Cover elem : cover) {
       res.add(elem.toString());
     }
