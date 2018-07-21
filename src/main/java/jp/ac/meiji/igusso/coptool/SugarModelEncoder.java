@@ -133,6 +133,11 @@ public final class SugarModelEncoder implements ModelEncoder {
   }
 
   @Override
+  public List<String> encode(ConflictPointConstraint constraint) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public List<String> encode(PseudoBooleanConstraint constraint) {
     List<String> res = new ArrayList<>();
     res.add(format("; constraint %s", constraint.getName()));
