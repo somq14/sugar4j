@@ -80,7 +80,7 @@ public final class PseudoBooleanConstraint implements Constraint {
     public Builder addTerm(int coeff, @NonNull Variable var, int val) {
       if (!var.getDomain().contains(val)) {
         throw new IllegalArgumentException(
-            "The Variable's Domain Do Not Contain The Value: " + var + " " + val);
+            "The Variable's Domain Does Not Contain The Value: " + var + " " + val);
       }
 
       coeffs.add(coeff);

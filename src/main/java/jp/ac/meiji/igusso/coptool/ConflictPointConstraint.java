@@ -24,6 +24,10 @@ public final class ConflictPointConstraint implements Constraint {
     this.weight = weight;
   }
 
+  public int size() {
+    return variables.size();
+  }
+
   @Override
   public boolean feasible(Model model) {
     List<Variable> modelVariables = model.getVariables();

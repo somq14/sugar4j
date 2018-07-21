@@ -1,5 +1,7 @@
 package jp.ac.meiji.igusso.coptool;
 
+import static java.lang.String.format;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,13 +26,34 @@ public final class ScopModelEncoder implements ModelEncoder {
     }
     domainExp.setLength(domainExp.length() - 2);
 
-    String body = String.format("variable %s in {%s}", variable.getName(), domainExp.toString());
+    String body = format("variable %s in {%s}", variable.getName(), domainExp.toString());
     return Arrays.asList(body);
   }
 
   @Override
   public List<String> encode(ConflictPointConstraint constraint) {
-    throw new UnsupportedOperationException();
+    String weightExp = constraint.getWeight() < 0 ? "inf" : constraint.getWeight() + "";
+
+    int negativeTermCount = 0;
+    for (int i = 0; i < constraint.size(); i++) {
+      if (!constraint.getPhases().get(i)) {
+        negativeTermCount += 1;
+      }
+    }
+    int rhs = constraint.size() - 1 - negativeTermCount;
+
+    StringBuilder varExp = new StringBuilder();
+    for (int i = 0; i < constraint.size(); i++) {
+      boolean phase = constraint.getPhases().get(i);
+      Variable var = constraint.getVariables().get(i);
+      int val = constraint.getValues().get(i);
+
+      varExp.append(' ').append(format("%d(%s, %d)", phase ? 1 : -1, var.getName(), val));
+    }
+
+    String cons = format("%s: weight=%s type=linear %s <= %d", constraint.getName(), weightExp,
+        varExp.toString(), rhs);
+    return Arrays.asList(cons);
   }
 
   @Override
@@ -43,7 +66,7 @@ public final class ScopModelEncoder implements ModelEncoder {
       Variable var = constraint.getVariables().get(i);
       int val = constraint.getValues().get(i);
 
-      termsBuilder.append(String.format("%d(%s, %d)", coeff, var.getName(), val));
+      termsBuilder.append(format("%d(%s, %d)", coeff, var.getName(), val));
       termsBuilder.append(' ');
     }
     String termsExp = termsBuilder.toString();
@@ -52,27 +75,27 @@ public final class ScopModelEncoder implements ModelEncoder {
 
     switch (constraint.getOp()) {
       case EQ:
-        cons = String.format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
+        cons = format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
             termsExp, "=", constraint.getRhs());
         break;
 
       case LE:
-        cons = String.format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
+        cons = format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
             termsExp, "<=", constraint.getRhs());
         break;
 
       case LT:
-        cons = String.format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
+        cons = format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
             termsExp, "<=", constraint.getRhs() - 1);
         break;
 
       case GE:
-        cons = String.format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
+        cons = format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
             termsExp, ">=", constraint.getRhs());
         break;
 
       case GT:
-        cons = String.format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
+        cons = format("%s: weight=%s type=linear %s %s %d", constraint.getName(), weightExp,
             termsExp, ">=", constraint.getRhs() + 1);
         break;
 
@@ -91,7 +114,7 @@ public final class ScopModelEncoder implements ModelEncoder {
     }
 
     String weightExp = constraint.getWeight() < 0 ? "inf" : constraint.getWeight() + "";
-    String cons = String.format(
+    String cons = format(
         "%s: weight=%s type=alldiff %s;", constraint.getName(), weightExp, varExp.toString());
     return Arrays.asList(cons);
   }
