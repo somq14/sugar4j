@@ -525,10 +525,8 @@ public final class SchedulingProblemEncoder {
             continue;
           }
           String consName = format("C11_i%02d_d%02d_t%02d", i, d, t);
-          PseudoBooleanConstraint cons =
-              PseudoBooleanConstraint.of(consName, Comparator.EQ, 1, Q[i][d][t])
-                  .addTerm(1, x[i][d], t)
-                  .build();
+          Constraint cons =
+              ConflictPointConstraint.of(consName, Q[i][d][t]).addTerm(x[i][d], t, false).build();
           res.add(cons);
         }
       }
@@ -551,10 +549,8 @@ public final class SchedulingProblemEncoder {
             continue;
           }
           String consName = format("C12_i%02d_d%02d_t%02d", i, d, t);
-          PseudoBooleanConstraint cons =
-              PseudoBooleanConstraint.of(consName, Comparator.EQ, 0, P[i][d][t])
-                  .addTerm(1, x[i][d], t)
-                  .build();
+          Constraint cons =
+              ConflictPointConstraint.of(consName, P[i][d][t]).addTerm(x[i][d], t, true).build();
           res.add(cons);
         }
       }
