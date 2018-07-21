@@ -61,6 +61,20 @@ public class SugarModelEncoderTest {
     assertThat("(or (not v00__3) (not v01__2) v02__1) ; cons", is(actual));
   }
 
+  @Test
+  public void testSoftConflictPointConstraintEncode3() {
+    ConflictPointConstraint cons = ConflictPointConstraint.of("cons", 3)
+                                       .addTerm(v[0], 1, true)
+                                       .addTerm(v[1], 0, false)
+                                       .build();
+    model.addConstraint(cons);
+
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
+
   // @Test
   public void test() {
     Model model = new Model();

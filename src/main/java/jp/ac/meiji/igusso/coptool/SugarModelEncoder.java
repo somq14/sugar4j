@@ -143,8 +143,15 @@ public final class SugarModelEncoder implements ModelEncoder {
 
   @Override
   public List<String> encode(ConflictPointConstraint constraint) {
+    List<String> res = new ArrayList<>();
+
     if (constraint.getWeight() >= 0) {
-      throw new IllegalStateException("Soft ConflictPointConstraint is not supported");
+      String penaName = format("_P__%s", constraint.getName());
+      res.add(format("(int %s 0 1)", penaName));
+
+      penaVariableNames.add(penaName);
+      penaMaxs.add(1);
+      penaWeights.add(constraint.getWeight());
     }
 
     StringBuilder termsExp = new StringBuilder();
@@ -154,14 +161,21 @@ public final class SugarModelEncoder implements ModelEncoder {
       Variable var = constraint.getVariables().get(i);
       int val = constraint.getValues().get(i);
 
-      String termExp = phase ? format("(not %s) ", varToString(var, val))
-                             : format("%s ", varToString(var, val));
+      String termExp =
+          phase ? format("(not %s) ", varToString(var, val)) : format("%s ", varToString(var, val));
       termsExp.append(termExp);
     }
+
+    if (constraint.getWeight() >= 0) {
+      String penaName = format("_P__%s", constraint.getName());
+      termsExp.append(format("(>= %s 1) ", penaName));
+    }
+
     termsExp.setLength(termsExp.length() - 1);
 
     String cons = format("(or %s) ; %s", termsExp.toString(), constraint.getName());
-    return Arrays.asList(cons);
+    res.add(cons);
+    return Collections.unmodifiableList(res);
   }
 
   @Override
