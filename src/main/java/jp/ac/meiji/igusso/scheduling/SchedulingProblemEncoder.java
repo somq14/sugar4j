@@ -308,7 +308,7 @@ public final class SchedulingProblemEncoder {
   /**
   /* C05:
    * 任意のスタッフiに対して，連続で勤務する日数の上限cmax[i]が定められている.
-  /* 任意の連続するcmax[i]日間に関して，休暇の回数が1日以上であればよい
+  /* 任意の連続するcmax[i] + 1日間に関して，休暇の回数が1日以上であればよい
    */
   private List<Constraint> constraint5() {
     List<Constraint> res = new ArrayList<>();
@@ -316,10 +316,9 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int d = 0; d < D.length - C_MAX[i]; d++) {
         String consName = format("C05_i%02d_d%02d", i, d);
-        PseudoBooleanConstraint.Builder cons =
-            PseudoBooleanConstraint.of(consName, Comparator.GE, 1);
+        ConflictPointConstraint.Builder cons = ConflictPointConstraint.of(consName);
         for (int j = d; j <= d + C_MAX[i]; j++) {
-          cons.addTerm(1, x[i][j], 0);
+          cons.addTerm(x[i][j], 0, false);
         }
         res.add(cons.build());
       }
