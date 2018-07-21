@@ -143,7 +143,25 @@ public final class SugarModelEncoder implements ModelEncoder {
 
   @Override
   public List<String> encode(ConflictPointConstraint constraint) {
-    throw new UnsupportedOperationException();
+    if (constraint.getWeight() >= 0) {
+      throw new IllegalStateException("Soft ConflictPointConstraint is not supported");
+    }
+
+    StringBuilder termsExp = new StringBuilder();
+
+    for (int i = 0; i < constraint.size(); i++) {
+      boolean phase = constraint.getPhases().get(i);
+      Variable var = constraint.getVariables().get(i);
+      int val = constraint.getValues().get(i);
+
+      String termExp = phase ? format("(not %s) ", varToString(var, val))
+                             : format("%s ", varToString(var, val));
+      termsExp.append(termExp);
+    }
+    termsExp.setLength(termsExp.length() - 1);
+
+    String cons = format("(or %s) ; %s", termsExp.toString(), constraint.getName());
+    return Arrays.asList(cons);
   }
 
   @Override
