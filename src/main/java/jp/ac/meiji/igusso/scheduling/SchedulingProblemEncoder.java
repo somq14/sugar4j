@@ -8,6 +8,7 @@ import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.ShiftOnRequests;
 import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.Staff;
 
 import jp.ac.meiji.igusso.coptool.Comparator;
+import jp.ac.meiji.igusso.coptool.ConflictPointConstraint;
 import jp.ac.meiji.igusso.coptool.Constraint;
 import jp.ac.meiji.igusso.coptool.Model;
 import jp.ac.meiji.igusso.coptool.PseudoBooleanConstraint;
@@ -236,10 +237,10 @@ public final class SchedulingProblemEncoder {
         for (int t1 = 1; t1 < T.length; t1++) {
           for (int t2 : R[t1]) {
             String consName = format("C02_i%02d_d%02d_t%02d_r%02d", i, d, t1, t2);
-            PseudoBooleanConstraint cons = PseudoBooleanConstraint.of(consName, Comparator.LE, 1)
-                                               .addTerm(1, x[i][d], t1)
-                                               .addTerm(1, x[i][d + 1], t2)
-                                               .build();
+            Constraint cons = ConflictPointConstraint.of(consName)
+                                  .addTerm(x[i][d], t1)
+                                  .addTerm(x[i][d + 1], t2)
+                                  .build();
             res.add(cons);
           }
         }
@@ -345,14 +346,13 @@ public final class SchedulingProblemEncoder {
         // ここでs日の連続勤務を許さないという制約を生成
         for (int d = 0; d < D.length - (s + 1); d++) {
           String consName = format("C06_i%02d_s%02d_d%02d", i, s, d);
-          PseudoBooleanConstraint.Builder cons =
-              PseudoBooleanConstraint.of(consName, Comparator.GE, -1);
+          ConflictPointConstraint.Builder cons = ConflictPointConstraint.of(consName);
 
-          cons.addTerm(-1, x[i][d], 0);
+          cons.addTerm(x[i][d], 0, true);
           for (int j = d + 1; j < d + s + 1; j++) {
-            cons.addTerm(1, x[i][j], 0);
+            cons.addTerm(x[i][j], 0, false);
           }
-          cons.addTerm(-1, x[i][d + s + 1], 0);
+          cons.addTerm(x[i][d + s + 1], 0, true);
 
           res.add(cons.build());
         }
@@ -377,14 +377,13 @@ public final class SchedulingProblemEncoder {
         // ここでs日の連続休暇を許さないという制約を生成
         for (int d = 0; d < D.length - (s + 1); d++) {
           String consName = format("C07_i%02d_s%02d_d%02d", i, s, d);
-          PseudoBooleanConstraint.Builder cons =
-              PseudoBooleanConstraint.of(consName, Comparator.GE, 1 - s);
+          ConflictPointConstraint.Builder cons = ConflictPointConstraint.of(consName);
 
-          cons.addTerm(1, x[i][d], 0);
+          cons.addTerm(x[i][d], 0, false);
           for (int j = d + 1; j < d + s + 1; j++) {
-            cons.addTerm(-1, x[i][j], 0);
+            cons.addTerm(x[i][j], 0, true);
           }
-          cons.addTerm(1, x[i][d + s + 1], 0);
+          cons.addTerm(x[i][d + s + 1], 0, false);
 
           res.add(cons.build());
         }
@@ -408,21 +407,37 @@ public final class SchedulingProblemEncoder {
 
     for (int i : I) {
       for (int w : W) {
-        String consName1 = format("C08L_i%02d_w%d", i, w);
-        PseudoBooleanConstraint cons1 = PseudoBooleanConstraint.of(consName1, Comparator.LE, 2)
-                                            .addTerm(1, x[i][7 * w + 5], 0)
-                                            .addTerm(1, x[i][7 * w + 6], 0)
-                                            .addTerm(1, k[i][w], 1)
+        String consName1 = format("C08A_i%02d_w%d", i, w);
+        ConflictPointConstraint cons1 = ConflictPointConstraint.of(consName1)
+                                            .addTerm(x[i][7 * w + 5], 0, true)
+                                            .addTerm(x[i][7 * w + 6], 0, true)
+                                            .addTerm(k[i][w], 1, true)
                                             .build();
         res.add(cons1);
 
-        String consName2 = format("C08R_i%02d_w%d", i, w);
-        PseudoBooleanConstraint cons2 = PseudoBooleanConstraint.of(consName2, Comparator.GE, 2)
-                                            .addTerm(1, x[i][7 * w + 5], 0)
-                                            .addTerm(1, x[i][7 * w + 6], 0)
-                                            .addTerm(2, k[i][w], 1)
+        String consName2 = format("C08B_i%02d_w%d", i, w);
+        ConflictPointConstraint cons2 = ConflictPointConstraint.of(consName2)
+                                            .addTerm(x[i][7 * w + 5], 0, true)
+                                            .addTerm(x[i][7 * w + 6], 0, false)
+                                            .addTerm(k[i][w], 0, true)
                                             .build();
         res.add(cons2);
+
+        String consName3 = format("C08C_i%02d_w%d", i, w);
+        ConflictPointConstraint cons3 = ConflictPointConstraint.of(consName3)
+                                            .addTerm(x[i][7 * w + 5], 0, false)
+                                            .addTerm(x[i][7 * w + 6], 0, true)
+                                            .addTerm(k[i][w], 0, true)
+                                            .build();
+        res.add(cons3);
+
+        String consName4 = format("C08D_i%02d_w%d", i, w);
+        ConflictPointConstraint cons4 = ConflictPointConstraint.of(consName4)
+                                            .addTerm(x[i][7 * w + 5], 0, false)
+                                            .addTerm(x[i][7 * w + 6], 0, false)
+                                            .addTerm(k[i][w], 0, true)
+                                            .build();
+        res.add(cons4);
       }
     }
 
@@ -449,8 +464,7 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int d : N[i]) {
         String consName = format("C09_i%02d_d%02d", i, d);
-        Constraint cons =
-            PseudoBooleanConstraint.of(consName, Comparator.EQ, 1).addTerm(1, x[i][d], 0).build();
+        Constraint cons = ConflictPointConstraint.of(consName).addTerm(x[i][d], 0, false).build();
         res.add(cons);
       }
     }
