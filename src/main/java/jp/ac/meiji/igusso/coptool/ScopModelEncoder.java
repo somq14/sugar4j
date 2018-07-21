@@ -58,7 +58,19 @@ public final class ScopModelEncoder implements ModelEncoder {
 
   @Override
   public List<String> encode(LinearConstraint constraint) {
-    throw new UnsupportedOperationException();
+    PseudoBooleanConstraint.Builder cons = PseudoBooleanConstraint.of(
+        constraint.getName(), constraint.getOp(), constraint.getRhs(), constraint.getWeight());
+
+    for (int i = 0; i < constraint.size(); i++) {
+      int coeff = constraint.getCoeffs().get(i);
+      Variable var = constraint.getVariables().get(i);
+
+      for (int v : var.getDomain()) {
+        cons.addTerm(coeff * v, var, v);
+      }
+    }
+
+    return encode(cons.build());
   }
 
   @Override

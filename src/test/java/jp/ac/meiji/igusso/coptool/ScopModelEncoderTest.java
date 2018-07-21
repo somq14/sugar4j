@@ -29,9 +29,7 @@ public class ScopModelEncoderTest {
 
   @Test
   public void testConflictPointConstraintEncode1() {
-    Constraint cons = ConflictPointConstraint.of("cons")
-                          .addTerm(v[0], 1)
-                          .build();
+    Constraint cons = ConflictPointConstraint.of("cons").addTerm(v[0], 1).build();
     model.addConstraint(cons);
 
     List<String> body = encoder.encode(model);
@@ -41,9 +39,7 @@ public class ScopModelEncoderTest {
 
   @Test
   public void testConflictPointConstraintEncode2() {
-    Constraint cons = ConflictPointConstraint.of("cons")
-                          .addTerm(v[0], 1, false)
-                          .build();
+    Constraint cons = ConflictPointConstraint.of("cons").addTerm(v[0], 1, false).build();
     model.addConstraint(cons);
 
     List<String> body = encoder.encode(model);
@@ -65,6 +61,19 @@ public class ScopModelEncoderTest {
     assertThat("cons: weight=inf type=linear  1(v00, 3) 1(v01, 2) -1(v02, 1) <= 1", is(actual));
   }
 
+  @Test
+  public void testLinearConstraintEncode() {
+    Constraint cons = LinearConstraint.of("cons", Comparator.LE, 12)
+                          .addTerm(1, v[0])
+                          .addTerm(2, v[1])
+                          .addTerm(-3, v[2])
+                          .build();
+    model.addConstraint(cons);
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
 
   // @Test
   public void test() {
