@@ -16,21 +16,21 @@ public class SugarModelEncoderTest {
     Variable v2 = model.addVariable("v2", asList(1, 2, 3));
     Variable v3 = model.addVariable("v3", asList(1, 2, 3));
 
-    LinearConstraint c1 = LinearConstraint.of("c1", EQ, 3, 1)
+    PseudoBooleanConstraint c1 = PseudoBooleanConstraint.of("c1", EQ, 3, 1)
                              .addTerm(1, v1, 1)
                              .addTerm(2, v2, 2)
                              .addTerm(3, v3, 3)
                              .build();
     model.addConstraint(c1);
 
-    LinearConstraint c2 = LinearConstraint.of("c2", LE, 3, 10)
+    PseudoBooleanConstraint c2 = PseudoBooleanConstraint.of("c2", LE, 3, 10)
                              .addTerm(1, v1, 1)
                              .addTerm(2, v2, 2)
                              .addTerm(3, v3, 3)
                              .build();
     model.addConstraint(c2);
 
-    LinearConstraint c3 = LinearConstraint.of("c3", GT, 3, 100)
+    PseudoBooleanConstraint c3 = PseudoBooleanConstraint.of("c3", GT, 3, 100)
                              .addTerm(3, v1, 1)
                              .addTerm(2, v2, 2)
                              .addTerm(1, v3, 3)

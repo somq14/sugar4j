@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Value
-public final class LinearConstraint implements Constraint {
+public final class PseudoBooleanConstraint implements Constraint {
   String name;
   List<Integer> coeffs;
   List<Variable> variables;
@@ -17,7 +17,7 @@ public final class LinearConstraint implements Constraint {
   int rhs;
   int weight;
 
-  private LinearConstraint(String name, List<Integer> coeffs, List<Variable> variables,
+  private PseudoBooleanConstraint(String name, List<Integer> coeffs, List<Variable> variables,
       List<Integer> values, Comparator op, int rhs, int weight) {
     this.name = name;
     this.weight = weight;
@@ -89,8 +89,8 @@ public final class LinearConstraint implements Constraint {
       return this;
     }
 
-    public LinearConstraint build() {
-      return new LinearConstraint(name, coeffs, variables, values, op, rhs, weight);
+    public PseudoBooleanConstraint build() {
+      return new PseudoBooleanConstraint(name, coeffs, variables, values, op, rhs, weight);
     }
   }
 }

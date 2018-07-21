@@ -38,7 +38,7 @@ public final class SugarModelEncoder implements ModelEncoder {
     }
   }
 
-  private static int calcLhsMin(LinearConstraint constraint) {
+  private static int calcLhsMin(PseudoBooleanConstraint constraint) {
     int lhsMin = 0;
     for (int i = 0; i < constraint.size(); i++) {
       int coeff = constraint.getCoeffs().get(i);
@@ -49,7 +49,7 @@ public final class SugarModelEncoder implements ModelEncoder {
     return lhsMin;
   }
 
-  private static int calcLhsMax(LinearConstraint constraint) {
+  private static int calcLhsMax(PseudoBooleanConstraint constraint) {
     int lhsMax = 0;
     for (int i = 0; i < constraint.size(); i++) {
       int coeff = constraint.getCoeffs().get(i);
@@ -133,7 +133,7 @@ public final class SugarModelEncoder implements ModelEncoder {
   }
 
   @Override
-  public List<String> encode(LinearConstraint constraint) {
+  public List<String> encode(PseudoBooleanConstraint constraint) {
     List<String> res = new ArrayList<>();
     res.add(format("; constraint %s", constraint.getName()));
 

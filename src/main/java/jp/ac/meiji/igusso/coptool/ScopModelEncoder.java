@@ -29,7 +29,7 @@ public final class ScopModelEncoder implements ModelEncoder {
   }
 
   @Override
-  public List<String> encode(LinearConstraint constraint) {
+  public List<String> encode(PseudoBooleanConstraint constraint) {
     String weightExp = constraint.getWeight() < 0 ? "inf" : constraint.getWeight() + "";
 
     StringBuilder termsBuilder = new StringBuilder();

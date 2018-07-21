@@ -9,8 +9,8 @@ import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.Staff;
 
 import jp.ac.meiji.igusso.coptool.Comparator;
 import jp.ac.meiji.igusso.coptool.Constraint;
-import jp.ac.meiji.igusso.coptool.LinearConstraint;
 import jp.ac.meiji.igusso.coptool.Model;
+import jp.ac.meiji.igusso.coptool.PseudoBooleanConstraint;
 import jp.ac.meiji.igusso.coptool.Variable;
 import lombok.NonNull;
 
@@ -236,10 +236,10 @@ public final class SchedulingProblemEncoder {
         for (int t1 = 1; t1 < T.length; t1++) {
           for (int t2 : R[t1]) {
             String consName = format("C02_i%02d_d%02d_t%02d_r%02d", i, d, t1, t2);
-            LinearConstraint cons = LinearConstraint.of(consName, Comparator.LE, 1)
-                                        .addTerm(1, x[i][d], t1)
-                                        .addTerm(1, x[i][d + 1], t2)
-                                        .build();
+            PseudoBooleanConstraint cons = PseudoBooleanConstraint.of(consName, Comparator.LE, 1)
+                                               .addTerm(1, x[i][d], t1)
+                                               .addTerm(1, x[i][d + 1], t2)
+                                               .build();
             res.add(cons);
           }
         }
@@ -260,7 +260,8 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int t = 1; t < T.length; t++) {
         String consName = format("C03_i%02d_t%02d", i, t);
-        LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.LE, M_MAX[i][t]);
+        PseudoBooleanConstraint.Builder cons =
+            PseudoBooleanConstraint.of(consName, Comparator.LE, M_MAX[i][t]);
         for (int d : D) {
           cons.addTerm(1, x[i][d], t);
         }
@@ -280,7 +281,8 @@ public final class SchedulingProblemEncoder {
 
     for (int i : I) {
       String consName1 = format("C04LB_i%02d", i);
-      LinearConstraint.Builder cons1 = LinearConstraint.of(consName1, Comparator.GE, B_MIN[i]);
+      PseudoBooleanConstraint.Builder cons1 =
+          PseudoBooleanConstraint.of(consName1, Comparator.GE, B_MIN[i]);
       for (int d : D) {
         for (int t = 1; t < T.length; t++) {
           cons1.addTerm(L[t], x[i][d], t);
@@ -289,7 +291,8 @@ public final class SchedulingProblemEncoder {
       res.add(cons1.build());
 
       String consName2 = format("C04UB_i%02d", i);
-      LinearConstraint.Builder cons2 = LinearConstraint.of(consName2, Comparator.LE, B_MAX[i]);
+      PseudoBooleanConstraint.Builder cons2 =
+          PseudoBooleanConstraint.of(consName2, Comparator.LE, B_MAX[i]);
       for (int d : D) {
         for (int t = 1; t < T.length; t++) {
           cons2.addTerm(L[t], x[i][d], t);
@@ -312,7 +315,8 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int d = 0; d < D.length - C_MAX[i]; d++) {
         String consName = format("C05_i%02d_d%02d", i, d);
-        LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.GE, 1);
+        PseudoBooleanConstraint.Builder cons =
+            PseudoBooleanConstraint.of(consName, Comparator.GE, 1);
         for (int j = d; j <= d + C_MAX[i]; j++) {
           cons.addTerm(1, x[i][j], 0);
         }
@@ -341,7 +345,8 @@ public final class SchedulingProblemEncoder {
         // ここでs日の連続勤務を許さないという制約を生成
         for (int d = 0; d < D.length - (s + 1); d++) {
           String consName = format("C06_i%02d_s%02d_d%02d", i, s, d);
-          LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.GE, -1);
+          PseudoBooleanConstraint.Builder cons =
+              PseudoBooleanConstraint.of(consName, Comparator.GE, -1);
 
           cons.addTerm(-1, x[i][d], 0);
           for (int j = d + 1; j < d + s + 1; j++) {
@@ -372,7 +377,8 @@ public final class SchedulingProblemEncoder {
         // ここでs日の連続休暇を許さないという制約を生成
         for (int d = 0; d < D.length - (s + 1); d++) {
           String consName = format("C07_i%02d_s%02d_d%02d", i, s, d);
-          LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.GE, 1 - s);
+          PseudoBooleanConstraint.Builder cons =
+              PseudoBooleanConstraint.of(consName, Comparator.GE, 1 - s);
 
           cons.addTerm(1, x[i][d], 0);
           for (int j = d + 1; j < d + s + 1; j++) {
@@ -403,26 +409,27 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int w : W) {
         String consName1 = format("C08L_i%02d_w%d", i, w);
-        LinearConstraint cons1 = LinearConstraint.of(consName1, Comparator.LE, 2)
-                                     .addTerm(1, x[i][7 * w + 5], 0)
-                                     .addTerm(1, x[i][7 * w + 6], 0)
-                                     .addTerm(1, k[i][w], 1)
-                                     .build();
+        PseudoBooleanConstraint cons1 = PseudoBooleanConstraint.of(consName1, Comparator.LE, 2)
+                                            .addTerm(1, x[i][7 * w + 5], 0)
+                                            .addTerm(1, x[i][7 * w + 6], 0)
+                                            .addTerm(1, k[i][w], 1)
+                                            .build();
         res.add(cons1);
 
         String consName2 = format("C08R_i%02d_w%d", i, w);
-        LinearConstraint cons2 = LinearConstraint.of(consName2, Comparator.GE, 2)
-                                     .addTerm(1, x[i][7 * w + 5], 0)
-                                     .addTerm(1, x[i][7 * w + 6], 0)
-                                     .addTerm(2, k[i][w], 1)
-                                     .build();
+        PseudoBooleanConstraint cons2 = PseudoBooleanConstraint.of(consName2, Comparator.GE, 2)
+                                            .addTerm(1, x[i][7 * w + 5], 0)
+                                            .addTerm(1, x[i][7 * w + 6], 0)
+                                            .addTerm(2, k[i][w], 1)
+                                            .build();
         res.add(cons2);
       }
     }
 
     for (int i : I) {
       String consName = format("C08_i%02d", i);
-      LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.LE, A_MAX[i]);
+      PseudoBooleanConstraint.Builder cons =
+          PseudoBooleanConstraint.of(consName, Comparator.LE, A_MAX[i]);
       for (int w : W) {
         cons.addTerm(1, k[i][w], 1);
       }
@@ -443,7 +450,7 @@ public final class SchedulingProblemEncoder {
       for (int d : N[i]) {
         String consName = format("C09_i%02d_d%02d", i, d);
         Constraint cons =
-            LinearConstraint.of(consName, Comparator.EQ, 1).addTerm(1, x[i][d], 0).build();
+            PseudoBooleanConstraint.of(consName, Comparator.EQ, 1).addTerm(1, x[i][d], 0).build();
         res.add(cons);
       }
     }
@@ -467,7 +474,8 @@ public final class SchedulingProblemEncoder {
     for (int d : D) {
       for (int t = 1; t < T.length; t++) {
         String consName = format("C10_d%02d_t%02d", d, t);
-        LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.EQ, U[d][t]);
+        PseudoBooleanConstraint.Builder cons =
+            PseudoBooleanConstraint.of(consName, Comparator.EQ, U[d][t]);
 
         for (int i : I) {
           cons.addTerm(1, x[i][d], t);
@@ -503,9 +511,10 @@ public final class SchedulingProblemEncoder {
             continue;
           }
           String consName = format("C11_i%02d_d%02d_t%02d", i, d, t);
-          LinearConstraint cons = LinearConstraint.of(consName, Comparator.EQ, 1, Q[i][d][t])
-                                      .addTerm(1, x[i][d], t)
-                                      .build();
+          PseudoBooleanConstraint cons =
+              PseudoBooleanConstraint.of(consName, Comparator.EQ, 1, Q[i][d][t])
+                  .addTerm(1, x[i][d], t)
+                  .build();
           res.add(cons);
         }
       }
@@ -528,9 +537,10 @@ public final class SchedulingProblemEncoder {
             continue;
           }
           String consName = format("C12_i%02d_d%02d_t%02d", i, d, t);
-          LinearConstraint cons = LinearConstraint.of(consName, Comparator.EQ, 0, P[i][d][t])
-                                      .addTerm(1, x[i][d], t)
-                                      .build();
+          PseudoBooleanConstraint cons =
+              PseudoBooleanConstraint.of(consName, Comparator.EQ, 0, P[i][d][t])
+                  .addTerm(1, x[i][d], t)
+                  .build();
           res.add(cons);
         }
       }
@@ -552,8 +562,8 @@ public final class SchedulingProblemEncoder {
           continue;
         }
         String consName = format("C13_d%02d_t%02d", d, t);
-        LinearConstraint.Builder cons =
-            LinearConstraint.of(consName, Comparator.LE, 0, V_MIN[d][t]);
+        PseudoBooleanConstraint.Builder cons =
+            PseudoBooleanConstraint.of(consName, Comparator.LE, 0, V_MIN[d][t]);
 
         for (int yy = 0; yy <= U[d][t]; yy++) {
           cons.addTerm(yy, y[d][t], yy);
@@ -580,8 +590,8 @@ public final class SchedulingProblemEncoder {
           continue;
         }
         String consName = format("C14_d%02d_t%02d", d, t);
-        LinearConstraint.Builder cons =
-            LinearConstraint.of(consName, Comparator.LE, 0, V_MAX[d][t]);
+        PseudoBooleanConstraint.Builder cons =
+            PseudoBooleanConstraint.of(consName, Comparator.LE, 0, V_MAX[d][t]);
 
         for (int zz = 0; zz <= I.length - U[d][t]; zz++) {
           cons.addTerm(zz, z[d][t], zz);
