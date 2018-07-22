@@ -3,6 +3,8 @@ package jp.ac.meiji.igusso.coptool;
 import static java.lang.Math.max;
 import static java.lang.String.format;
 
+import lombok.Value;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -111,9 +113,14 @@ public final class SugarModelEncoder implements ModelEncoder {
     return lhsMax;
   }
 
-  private List<String> penaVariableNames;
-  private List<Integer> penaMaxs;
-  private List<Integer> penaWeights;
+  private List<PenaltyVariable> penaltyVariables;
+
+  @Value
+  private static class PenaltyVariable {
+    String name;
+    int max;
+    int weight;
+  }
 
   private List<String> generatePredicates() {
     List<String> res = new ArrayList<>();
@@ -131,14 +138,7 @@ public final class SugarModelEncoder implements ModelEncoder {
   }
 
   private List<String> encodeObjective(Model model) {
-    boolean hasSoftConstraints = false;
-    for (Constraint constraint : model.getConstraints()) {
-      if (constraint.getWeight() >= 0) {
-        hasSoftConstraints = true;
-        break;
-      }
-    }
-    if (!hasSoftConstraints) {
+    if (penaltyVariables.isEmpty()) {
       return Arrays.asList();
     }
 
@@ -146,23 +146,49 @@ public final class SugarModelEncoder implements ModelEncoder {
     res.add("; objective declaration");
 
     int maxPena = 0;
-    for (int i = 0; i < penaVariableNames.size(); i++) {
-      maxPena += penaWeights.get(i) * penaMaxs.get(i);
+    for (PenaltyVariable v : penaltyVariables) {
+      maxPena += v.getWeight() * v.getMax();
     }
     res.add(format("(int _P 0 %d)", maxPena));
 
+    Map<Integer, List<PenaltyVariable>> group = new HashMap<>();
+    for (PenaltyVariable v : penaltyVariables) {
+      if (!group.containsKey(v.getWeight())) {
+        group.put(v.getWeight(), new ArrayList<>());
+      }
+      group.get(v.getWeight()).add(v);
+    }
+
+    res.add(format("(objective minimize _P)"));
+    res.add("");
+
+    for (int weight : group.keySet()) {
+      List<PenaltyVariable> vars = group.get(weight);
+
+      int sum = 0;
+      for (PenaltyVariable v : vars) {
+        sum += v.getMax();
+      }
+      res.add(format("(int _P%03d 0 %d)", weight, sum));
+
+      StringBuilder varExp = new StringBuilder();
+      varExp.append(format("(= _P%03d (+%n", weight));
+      for (PenaltyVariable v : vars) {
+        varExp.append(format("  %s%n", v.getName()));
+      }
+      varExp.append("))");
+      res.add(varExp.toString());
+      res.add("");
+    }
+
     StringBuilder penaExp = new StringBuilder();
     penaExp.append(format("(= _P (+%n"));
-    for (int i = 0; i < penaVariableNames.size(); i++) {
-      int weight = penaWeights.get(i);
-      String name = penaVariableNames.get(i);
-
-      penaExp.append("  ").append(format("(* %d %s)%n", weight, name));
+    for (int weight : group.keySet()) {
+      penaExp.append("  ").append(format("(* %d _P%03d)%n", weight, weight));
     }
     penaExp.append("))");
-
     res.add(penaExp.toString());
-    res.add(format("(objective minimize _P)"));
+
     res.add("");
 
     return res;
@@ -195,9 +221,7 @@ public final class SugarModelEncoder implements ModelEncoder {
       String penaName = penaltyVarToString(constraint);
       res.add(format("(int %s 0 1)", penaName));
 
-      penaVariableNames.add(penaName);
-      penaMaxs.add(1);
-      penaWeights.add(constraint.getWeight());
+      penaltyVariables.add(new PenaltyVariable(penaName, 1, constraint.getWeight()));
     }
 
     StringBuilder termsExp = new StringBuilder();
@@ -283,19 +307,12 @@ public final class SugarModelEncoder implements ModelEncoder {
         res.add(format("(int %s 0 %d)", pena1, maxPena1));
         res.add(format("(int %s 0 %d)", pena2, maxPena2));
 
-        penaVariableNames.add(pena1);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena1);
-
-        penaVariableNames.add(pena2);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena2);
+        penaltyVariables.add(new PenaltyVariable(pena1, maxPena1, constraint.getWeight()));
+        penaltyVariables.add(new PenaltyVariable(pena2, maxPena2, constraint.getWeight()));
       } else {
         res.add(format("(int %s 0 %d)", pena, maxPena));
 
-        penaVariableNames.add(pena);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena);
+        penaltyVariables.add(new PenaltyVariable(pena, maxPena, constraint.getWeight()));
       }
     }
 
@@ -366,19 +383,12 @@ public final class SugarModelEncoder implements ModelEncoder {
         res.add(format("(int %s 0 %d)", pena1, maxPena1));
         res.add(format("(int %s 0 %d)", pena2, maxPena2));
 
-        penaVariableNames.add(pena1);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena1);
-
-        penaVariableNames.add(pena2);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena2);
+        penaltyVariables.add(new PenaltyVariable(pena1, maxPena1, constraint.getWeight()));
+        penaltyVariables.add(new PenaltyVariable(pena2, maxPena2, constraint.getWeight()));
       } else {
         res.add(format("(int %s 0 %d)", pena, maxPena));
 
-        penaVariableNames.add(pena);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena);
+        penaltyVariables.add(new PenaltyVariable(pena, maxPena, constraint.getWeight()));
       }
     }
     lhsExp.append(")");
@@ -420,9 +430,7 @@ public final class SugarModelEncoder implements ModelEncoder {
 
   @Override
   public List<String> encode(Model model) {
-    penaVariableNames = new ArrayList<>();
-    penaMaxs = new ArrayList<>();
-    penaWeights = new ArrayList<>();
+    penaltyVariables = new ArrayList<>();
 
     List<String> body = new ArrayList<>();
     body.addAll(generatePredicates());
