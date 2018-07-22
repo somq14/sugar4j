@@ -86,7 +86,6 @@ public final class SugarModelEncoder implements ModelEncoder {
     return lhsMin;
   }
 
-
   private static int calcLhsMax(PseudoBooleanConstraint constraint) {
     int lhsMax = 0;
     for (int i = 0; i < constraint.size(); i++) {
@@ -316,12 +315,7 @@ public final class SugarModelEncoder implements ModelEncoder {
       switch (constraint.getOp()) {
         case EQ:
           maxPena1 = max(constraint.getRhs() - lhsMin, 0);
-          res.add(format("(int %s 0 %d)", pena1, maxPena1));
-          res.add(format("(>= %s 0)", pena1));
-
           maxPena2 = max(lhsMax - constraint.getRhs(), 0);
-          res.add(format("(int %s 0 %d)", pena2, maxPena2));
-          res.add(format("(>= %s 0)", pena2));
 
           lhsExp.append(format(" %s", pena1));
           lhsExp.append(format(" (- %s)", pena2));
@@ -329,29 +323,21 @@ public final class SugarModelEncoder implements ModelEncoder {
 
         case LE:
           maxPena = max(lhsMax - constraint.getRhs(), 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" (- %s)", pena));
           break;
 
         case LT:
           maxPena = max(lhsMax - constraint.getRhs() + 1, 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" (- %s)", pena));
           break;
 
         case GE:
           maxPena = max(constraint.getRhs() - lhsMin, 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" %s", pena));
           break;
 
         case GT:
           maxPena = max(constraint.getRhs() - lhsMin + 1, 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" %s", pena));
           break;
 
@@ -360,6 +346,9 @@ public final class SugarModelEncoder implements ModelEncoder {
       }
 
       if (constraint.getOp() == Comparator.EQ) {
+        res.add(format("(int %s 0 %d)", pena1, maxPena1));
+        res.add(format("(int %s 0 %d)", pena2, maxPena2));
+
         penaVariableNames.add(pena1);
         penaWeights.add(constraint.getWeight());
         penaMaxs.add(maxPena1);
@@ -368,6 +357,8 @@ public final class SugarModelEncoder implements ModelEncoder {
         penaWeights.add(constraint.getWeight());
         penaMaxs.add(maxPena2);
       } else {
+        res.add(format("(int %s 0 %d)", pena, maxPena));
+
         penaVariableNames.add(pena);
         penaWeights.add(constraint.getWeight());
         penaMaxs.add(maxPena);
