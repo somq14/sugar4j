@@ -17,8 +17,12 @@ public final class SugarModelEncoder implements ModelEncoder {
 
   private SugarModelEncoder() {}
 
-  private static String varToString(Variable variable, int value) {
-    return format("%s__%d", variable.getName(), value);
+  private static String intVar(Variable variable, int value) {
+    return format("_%s__%d", variable.getName(), value);
+  }
+
+  private static String boolVar(Variable variable, int value) {
+    return format("(B _%s__%d)", variable.getName(), value);
   }
 
   private static String penaltyVarToString(Constraint constraint) {
@@ -111,6 +115,21 @@ public final class SugarModelEncoder implements ModelEncoder {
   private List<Integer> penaMaxs;
   private List<Integer> penaWeights;
 
+  private List<String> generatePredicates() {
+    List<String> res = new ArrayList<>();
+    res.add("; predicate definition");
+    res.add("(predicate (B v) (>= v 1))");
+    res.add("");
+    res.add("(predicate (BIND i b v) (and");
+    res.add("  (imp (B b) (<= i v))");
+    res.add("  (imp (B b) (>= i v))");
+    res.add("  (imp (and (<= i v) (>= i v)) (B b))");
+    res.add("  ))");
+    res.add("");
+
+    return Collections.unmodifiableList(res);
+  }
+
   private List<String> encodeObjective(Model model) {
     boolean hasSoftConstraints = false;
     for (Constraint constraint : model.getConstraints()) {
@@ -144,6 +163,7 @@ public final class SugarModelEncoder implements ModelEncoder {
 
     res.add(penaExp.toString());
     res.add(format("(objective minimize _P)"));
+    res.add("");
 
     return res;
   }
@@ -155,14 +175,12 @@ public final class SugarModelEncoder implements ModelEncoder {
     res.add(format("(int %s %s)", variable.getName(), domainToString(variable.getDomain())));
 
     for (Integer d : variable.getDomain()) {
-      String intVarName = variable.getName();
-      String boolVarName = varToString(variable, d);
+      String varName = variable.getName();
+      String intVarName = intVar(variable, d);
+      String boolVarName = boolVar(variable, d);
 
-      res.add(format("(bool %s) ; means %s = %d", boolVarName, intVarName, d));
-      res.add(format("(imp %s (<= %s %d))", boolVarName, intVarName, d));
-      res.add(format("(imp %s (>= %s %d))", boolVarName, intVarName, d));
-      res.add(format(
-          "(imp (and (<= %s %d) (>= %s %d)) %s)", intVarName, d, intVarName, d, boolVarName));
+      res.add(format("(int %s 0 1) ; %s = %d", intVarName, varName, d));
+      res.add(format("(BIND %s %s %d)", varName, intVarName, d));
     }
 
     res.add("");
@@ -190,7 +208,7 @@ public final class SugarModelEncoder implements ModelEncoder {
       int val = constraint.getValues().get(i);
 
       String termExp =
-          phase ? format("(not %s) ", varToString(var, val)) : format("%s ", varToString(var, val));
+          phase ? format("(not %s) ", boolVar(var, val)) : format("%s ", boolVar(var, val));
       termsExp.append(termExp);
     }
 
@@ -209,7 +227,6 @@ public final class SugarModelEncoder implements ModelEncoder {
   @Override
   public List<String> encode(LinearConstraint constraint) {
     List<String> res = new ArrayList<>();
-    res.add(format("; constraint %s", constraint.getName()));
 
     List<String> lhsTerms = new ArrayList<>(constraint.size());
     for (int i = 0; i < constraint.size(); i++) {
@@ -282,15 +299,14 @@ public final class SugarModelEncoder implements ModelEncoder {
       }
     }
 
-    res.add(format("(%s (+ %s) %s)", opName(constraint.getOp()), String.join(" ", lhsTerms),
-        constraint.getRhs()));
+    res.add(format("(%s (+ %s) %s) ; %s", opName(constraint.getOp()), String.join(" ", lhsTerms),
+        constraint.getRhs(), constraint.getName()));
     return Collections.unmodifiableList(res);
   }
 
   @Override
   public List<String> encode(PseudoBooleanConstraint constraint) {
     List<String> res = new ArrayList<>();
-    res.add(format("; constraint %s", constraint.getName()));
 
     StringBuilder lhsExp = new StringBuilder();
     lhsExp.append("(+");
@@ -298,7 +314,8 @@ public final class SugarModelEncoder implements ModelEncoder {
       int coeff = constraint.getCoeffs().get(i);
       Variable var = constraint.getVariables().get(i);
       int val = constraint.getValues().get(i);
-      lhsExp.append(format(" (if %s %d 0)", varToString(var, val), coeff));
+
+      lhsExp.append(format(" (* %d %s)", coeff, intVar(var, val)));
     }
 
     if (constraint.getWeight() >= 0) {
@@ -369,7 +386,6 @@ public final class SugarModelEncoder implements ModelEncoder {
     String cons = format("(%s %s %d) ; %s", opName(constraint.getOp()), lhsExp.toString(),
         constraint.getRhs(), constraint.getName());
     res.add(cons);
-    res.add("");
 
     return res;
   }
@@ -392,8 +408,8 @@ public final class SugarModelEncoder implements ModelEncoder {
     for (int d : domain) {
       for (int i = 0; i < vars.size(); i++) {
         for (int j = i + 1; j < vars.size(); j++) {
-          String v1Exp = varToString(vars.get(i), d);
-          String v2Exp = varToString(vars.get(j), d);
+          String v1Exp = boolVar(vars.get(i), d);
+          String v2Exp = boolVar(vars.get(j), d);
           res.add(format("(or (not %s) (not %s))", v1Exp, v2Exp));
         }
       }
@@ -409,6 +425,7 @@ public final class SugarModelEncoder implements ModelEncoder {
     penaWeights = new ArrayList<>();
 
     List<String> body = new ArrayList<>();
+    body.addAll(generatePredicates());
 
     for (Variable var : model.getVariables()) {
       body.addAll(encode(var));

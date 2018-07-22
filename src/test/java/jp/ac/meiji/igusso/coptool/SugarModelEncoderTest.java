@@ -33,7 +33,7 @@ public class SugarModelEncoderTest {
     model.addConstraint(cons);
     List<String> body = encoder.encode(cons);
     String actual = body.get(body.size() - 1);
-    assertThat("(or (not v00__1)) ; cons", is(actual));
+    assertThat("(or (not (B _v00__1))) ; cons", is(actual));
   }
 
   @Test
@@ -44,7 +44,7 @@ public class SugarModelEncoderTest {
 
     List<String> body = encoder.encode(cons);
     String actual = body.get(body.size() - 1);
-    assertThat("(or v00__1) ; cons", is(actual));
+    assertThat("(or (B _v00__1)) ; cons", is(actual));
   }
 
   @Test
@@ -58,7 +58,7 @@ public class SugarModelEncoderTest {
 
     List<String> body = encoder.encode(cons);
     String actual = body.get(body.size() - 1);
-    assertThat("(or (not v00__3) (not v01__2) v02__1) ; cons", is(actual));
+    assertThat("(or (not (B _v00__3)) (not (B _v01__2)) (B _v02__1)) ; cons", is(actual));
   }
 
   @Test
