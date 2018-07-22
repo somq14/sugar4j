@@ -10,6 +10,7 @@ import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.Staff;
 import jp.ac.meiji.igusso.coptool.Comparator;
 import jp.ac.meiji.igusso.coptool.ConflictPointConstraint;
 import jp.ac.meiji.igusso.coptool.Constraint;
+import jp.ac.meiji.igusso.coptool.LinearConstraint;
 import jp.ac.meiji.igusso.coptool.Model;
 import jp.ac.meiji.igusso.coptool.PseudoBooleanConstraint;
 import jp.ac.meiji.igusso.coptool.Variable;
@@ -57,8 +58,6 @@ public final class SchedulingProblemEncoder {
   // Variables (lowercase)
   private Variable[][] x;
   private Variable[][] k;
-  private Variable[][] y;
-  private Variable[][] z;
 
   private void initializeParameters() {
     List<Staff> iList = new ArrayList<>();
@@ -194,22 +193,6 @@ public final class SchedulingProblemEncoder {
       for (int w : W) {
         String varName = String.format("k_i%02d_w%d", i, w);
         k[i][w] = model.addVariable(varName, 2);
-      }
-    }
-
-    y = new Variable[D.length][T.length];
-    for (int d : D) {
-      for (int t = 1; t < T.length; t++) {
-        String varName = String.format("y_d%02d_t%02d", d, t);
-        y[d][t] = model.addVariable(varName, U[d][t] + 1);
-      }
-    }
-
-    z = new Variable[D.length][T.length];
-    for (int d : D) {
-      for (int t = 1; t < T.length; t++) {
-        String varName = String.format("z_d%02d_t%02d", d, t);
-        z[d][t] = model.addVariable(varName, I.length - U[d][t] + 1);
       }
     }
   }
@@ -438,14 +421,11 @@ public final class SchedulingProblemEncoder {
                                             .build();
         res.add(cons4);
       }
-    }
 
-    for (int i : I) {
       String consName = format("C08_i%02d", i);
-      PseudoBooleanConstraint.Builder cons =
-          PseudoBooleanConstraint.of(consName, Comparator.LE, A_MAX[i]);
+      LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.LE, A_MAX[i]);
       for (int w : W) {
-        cons.addTerm(1, k[i][w], 1);
+        cons.addTerm(1, k[i][w]);
       }
       res.add(cons.build());
     }
@@ -465,44 +445,6 @@ public final class SchedulingProblemEncoder {
         String consName = format("C09_i%02d_d%02d", i, d);
         Constraint cons = ConflictPointConstraint.of(consName).addTerm(x[i][d], 0, false).build();
         res.add(cons);
-      }
-    }
-
-    return Collections.unmodifiableList(res);
-  }
-
-  /**
-  /* C10:
-  /* 任意の日d，任意のシフトtに対して，
-  /* d日目にシフトtの勤務をする適正スタッフ数u[(d, t)]が定められている.
-  /*
-  /* 適正スタッフ数u[(d, t)]に対する勤務をするスタッフ数の不足人数を変数y[(d, t)]
-  /* 適正スタッフ数u[(d, t)]に対する勤務をするスタッフ数の超過人数を変数z[(d, t)]
-  /* で表す
-  /* 制約C10は変数に適切な値を割り当てる
-   */
-  private List<Constraint> constraint10() {
-    List<Constraint> res = new ArrayList<>();
-
-    for (int d : D) {
-      for (int t = 1; t < T.length; t++) {
-        String consName = format("C10_d%02d_t%02d", d, t);
-        PseudoBooleanConstraint.Builder cons =
-            PseudoBooleanConstraint.of(consName, Comparator.EQ, U[d][t]);
-
-        for (int i : I) {
-          cons.addTerm(1, x[i][d], t);
-        }
-
-        for (int zz = 0; zz <= I.length - U[d][t]; zz++) {
-          cons.addTerm(-zz, z[d][t], zz);
-        }
-
-        for (int yy = 0; yy <= U[d][t]; yy++) {
-          cons.addTerm(yy, y[d][t], yy);
-        }
-
-        res.add(cons.build());
       }
     }
 
@@ -572,10 +514,10 @@ public final class SchedulingProblemEncoder {
         }
         String consName = format("C13_d%02d_t%02d", d, t);
         PseudoBooleanConstraint.Builder cons =
-            PseudoBooleanConstraint.of(consName, Comparator.LE, 0, V_MIN[d][t]);
+            PseudoBooleanConstraint.of(consName, Comparator.GE, U[d][t], V_MIN[d][t]);
 
-        for (int yy = 0; yy <= U[d][t]; yy++) {
-          cons.addTerm(yy, y[d][t], yy);
+        for (int i : I) {
+          cons.addTerm(1, x[i][d], t);
         }
 
         res.add(cons.build());
@@ -600,10 +542,10 @@ public final class SchedulingProblemEncoder {
         }
         String consName = format("C14_d%02d_t%02d", d, t);
         PseudoBooleanConstraint.Builder cons =
-            PseudoBooleanConstraint.of(consName, Comparator.LE, 0, V_MAX[d][t]);
+            PseudoBooleanConstraint.of(consName, Comparator.LE, U[d][t], V_MAX[d][t]);
 
-        for (int zz = 0; zz <= I.length - U[d][t]; zz++) {
-          cons.addTerm(zz, z[d][t], zz);
+        for (int i : I) {
+          cons.addTerm(1, x[i][d], t);
         }
 
         res.add(cons.build());
@@ -628,7 +570,6 @@ public final class SchedulingProblemEncoder {
     model.addConstraints(constraint7());
     model.addConstraints(constraint8());
     model.addConstraints(constraint9());
-    model.addConstraints(constraint10());
     model.addConstraints(constraint11());
     model.addConstraints(constraint12());
     model.addConstraints(constraint13());
