@@ -75,6 +75,96 @@ public class SugarModelEncoderTest {
     // }
   }
 
+  @Test
+  public void testLinearConstraintEncode1() {
+    LinearConstraint cons = LinearConstraint.of("cons", LE, 16)
+                             .addTerm(5, v[0])
+                             .addTerm(7, v[1])
+                             .addTerm(-1, v[2])
+                             .build();
+    model.addConstraint(cons);
+
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
+
+  @Test
+  public void testSoftLinearConstraintEncode1() {
+    LinearConstraint cons = LinearConstraint.of("cons", LE, 16, 100)
+                             .addTerm(5, v[0])
+                             .addTerm(7, v[1])
+                             .addTerm(-1, v[2])
+                             .build();
+    model.addConstraint(cons);
+
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
+
+  @Test
+  public void testSoftLinearConstraintEncode2() {
+    LinearConstraint cons = LinearConstraint.of("cons", GE, 16, 100)
+                             .addTerm(5, v[0])
+                             .addTerm(7, v[1])
+                             .addTerm(-1, v[2])
+                             .build();
+    model.addConstraint(cons);
+
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
+
+  @Test
+  public void testSoftLinearConstraintEncode3() {
+    LinearConstraint cons = LinearConstraint.of("cons", EQ, 16, 100)
+                             .addTerm(5, v[0])
+                             .addTerm(7, v[1])
+                             .addTerm(-1, v[2])
+                             .build();
+    model.addConstraint(cons);
+
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
+
+  @Test
+  public void testSoftLinearConstraintEncode4() {
+    LinearConstraint cons = LinearConstraint.of("cons", LT, 16, 100)
+                             .addTerm(5, v[0])
+                             .addTerm(7, v[1])
+                             .addTerm(-1, v[2])
+                             .build();
+    model.addConstraint(cons);
+
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
+
+  @Test
+  public void testSoftLinearConstraintEncode5() {
+    LinearConstraint cons = LinearConstraint.of("cons", GT, 16, 100)
+                             .addTerm(5, v[0])
+                             .addTerm(7, v[1])
+                             .addTerm(-1, v[2])
+                             .build();
+    model.addConstraint(cons);
+
+    List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
+  }
+
   // @Test
   public void test() {
     Model model = new Model();
