@@ -2,9 +2,9 @@ package jp.ac.meiji.igusso.coptool.example;
 
 import jp.ac.meiji.igusso.coptool.AllDifferentConstraint;
 import jp.ac.meiji.igusso.coptool.Comparator;
-import jp.ac.meiji.igusso.coptool.LinearConstraint;
 import jp.ac.meiji.igusso.coptool.Model;
 import jp.ac.meiji.igusso.coptool.ModelEncoder;
+import jp.ac.meiji.igusso.coptool.PseudoBooleanConstraint;
 import jp.ac.meiji.igusso.coptool.ScopModelEncoder;
 import jp.ac.meiji.igusso.coptool.SugarModelEncoder;
 import jp.ac.meiji.igusso.coptool.Variable;
@@ -51,7 +51,8 @@ public final class MagicSquare {
 
     for (int i = 0; i < siz; i++) {
       String consName = String.format("row%d", i);
-      LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.EQ, sum);
+      PseudoBooleanConstraint.Builder cons =
+          PseudoBooleanConstraint.of(consName, Comparator.EQ, sum);
       for (int j = 0; j < siz; j++) {
         for (int k = 1; k <= siz * siz; k++) {
           cons.addTerm(k, var[i][j], k);
@@ -62,7 +63,8 @@ public final class MagicSquare {
 
     for (int j = 0; j < siz; j++) {
       String consName = String.format("col%d", j);
-      LinearConstraint.Builder cons = LinearConstraint.of(consName, Comparator.EQ, sum);
+      PseudoBooleanConstraint.Builder cons =
+          PseudoBooleanConstraint.of(consName, Comparator.EQ, sum);
       for (int i = 0; i < siz; i++) {
         for (int k = 1; k <= siz * siz; k++) {
           cons.addTerm(k, var[i][j], k);
@@ -71,7 +73,8 @@ public final class MagicSquare {
       model.addConstraint(cons.build());
     }
 
-    LinearConstraint.Builder crossCons1 = LinearConstraint.of("cross1", Comparator.EQ, sum);
+    PseudoBooleanConstraint.Builder crossCons1 =
+        PseudoBooleanConstraint.of("cross1", Comparator.EQ, sum);
     for (int i = 0; i < siz; i++) {
       for (int k = 1; k <= siz * siz; k++) {
         crossCons1.addTerm(k, var[i][i], k);
@@ -79,7 +82,8 @@ public final class MagicSquare {
     }
     model.addConstraint(crossCons1.build());
 
-    LinearConstraint.Builder crossCons2 = LinearConstraint.of("cross2", Comparator.EQ, sum);
+    PseudoBooleanConstraint.Builder crossCons2 =
+        PseudoBooleanConstraint.of("cross2", Comparator.EQ, sum);
     for (int i = 0; i < siz; i++) {
       for (int k = 1; k <= siz * siz; k++) {
         crossCons2.addTerm(k, var[i][siz - 1 - i], k);
