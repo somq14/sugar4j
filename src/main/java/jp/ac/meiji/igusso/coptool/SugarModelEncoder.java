@@ -3,6 +3,8 @@ package jp.ac.meiji.igusso.coptool;
 import static java.lang.Math.max;
 import static java.lang.String.format;
 
+import lombok.Value;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,8 +19,39 @@ public final class SugarModelEncoder implements ModelEncoder {
 
   private SugarModelEncoder() {}
 
-  private static String varName(Variable variable, int value) {
-    return format("%s__%d", variable.getName(), value);
+  private static String intVar(Variable variable, int value) {
+    return format("_%s__%d", variable.getName(), value);
+  }
+
+  private static String boolVar(Variable variable, int value) {
+    return format("(B _%s__%d)", variable.getName(), value);
+  }
+
+  private static String penaltyVarToString(Constraint constraint) {
+    return format("_P__%s", constraint.getName());
+  }
+
+  private static String penaltyVarToString(Constraint constraint, int ind) {
+    return format("_P%d__%s", ind, constraint.getName());
+  }
+
+  private static String domainToString(List<Integer> domain) {
+    StringBuilder res = new StringBuilder();
+    res.append('(');
+
+    int seqBegin = 0;
+    while (seqBegin < domain.size()) {
+      int seqEnd = seqBegin;
+      while (seqEnd + 1 < domain.size() && domain.get(seqEnd) + 1 == domain.get(seqEnd + 1)) {
+        seqEnd++;
+      }
+      res.append(format(" (%d %d)", domain.get(seqBegin), domain.get(seqEnd)));
+
+      seqBegin = seqEnd + 1;
+    }
+
+    res.append(" )");
+    return res.toString();
   }
 
   private static String opName(Comparator op) {
@@ -38,7 +71,7 @@ public final class SugarModelEncoder implements ModelEncoder {
     }
   }
 
-  private static int calcLhsMin(LinearConstraint constraint) {
+  private static int calcLhsMin(PseudoBooleanConstraint constraint) {
     int lhsMin = 0;
     for (int i = 0; i < constraint.size(); i++) {
       int coeff = constraint.getCoeffs().get(i);
@@ -49,7 +82,17 @@ public final class SugarModelEncoder implements ModelEncoder {
     return lhsMin;
   }
 
-  private static int calcLhsMax(LinearConstraint constraint) {
+  private static int calcLhsMin(LinearConstraint constraint) {
+    int lhsMin = 0;
+    for (int i = 0; i < constraint.size(); i++) {
+      int coeff = constraint.getCoeffs().get(i);
+      List<Integer> domain = constraint.getVariables().get(i).getDomain();
+      lhsMin += Math.min(coeff * domain.get(0), coeff * domain.get(domain.size() - 1));
+    }
+    return lhsMin;
+  }
+
+  private static int calcLhsMax(PseudoBooleanConstraint constraint) {
     int lhsMax = 0;
     for (int i = 0; i < constraint.size(); i++) {
       int coeff = constraint.getCoeffs().get(i);
@@ -60,19 +103,42 @@ public final class SugarModelEncoder implements ModelEncoder {
     return lhsMax;
   }
 
-  private List<String> penaVariableNames;
-  private List<Integer> penaMaxs;
-  private List<Integer> penaWeights;
+  private static int calcLhsMax(LinearConstraint constraint) {
+    int lhsMax = 0;
+    for (int i = 0; i < constraint.size(); i++) {
+      int coeff = constraint.getCoeffs().get(i);
+      List<Integer> domain = constraint.getVariables().get(i).getDomain();
+      lhsMax += Math.max(coeff * domain.get(0), coeff * domain.get(domain.size() - 1));
+    }
+    return lhsMax;
+  }
+
+  private List<PenaltyVariable> penaltyVariables;
+
+  @Value
+  private static class PenaltyVariable {
+    String name;
+    int max;
+    int weight;
+  }
+
+  private List<String> generatePredicates() {
+    List<String> res = new ArrayList<>();
+    res.add("; predicate definition");
+    res.add("(predicate (B v) (>= v 1))");
+    res.add("");
+    res.add("(predicate (BIND i b v) (and");
+    res.add("  (imp (B b) (<= i v))");
+    res.add("  (imp (B b) (>= i v))");
+    res.add("  (imp (and (<= i v) (>= i v)) (B b))");
+    res.add("  ))");
+    res.add("");
+
+    return Collections.unmodifiableList(res);
+  }
 
   private List<String> encodeObjective(Model model) {
-    boolean hasSoftConstraints = false;
-    for (Constraint constraint : model.getConstraints()) {
-      if (constraint.getWeight() >= 0) {
-        hasSoftConstraints = true;
-        break;
-      }
-    }
-    if (!hasSoftConstraints) {
+    if (penaltyVariables.isEmpty()) {
       return Arrays.asList();
     }
 
@@ -80,23 +146,50 @@ public final class SugarModelEncoder implements ModelEncoder {
     res.add("; objective declaration");
 
     int maxPena = 0;
-    for (int i = 0; i < penaVariableNames.size(); i++) {
-      maxPena += penaWeights.get(i) * penaMaxs.get(i);
+    for (PenaltyVariable v : penaltyVariables) {
+      maxPena += v.getWeight() * v.getMax();
     }
     res.add(format("(int _P 0 %d)", maxPena));
 
+    Map<Integer, List<PenaltyVariable>> group = new HashMap<>();
+    for (PenaltyVariable v : penaltyVariables) {
+      if (!group.containsKey(v.getWeight())) {
+        group.put(v.getWeight(), new ArrayList<>());
+      }
+      group.get(v.getWeight()).add(v);
+    }
+
+    res.add(format("(objective minimize _P)"));
+    res.add("");
+
+    for (int weight : group.keySet()) {
+      List<PenaltyVariable> vars = group.get(weight);
+
+      int sum = 0;
+      for (PenaltyVariable v : vars) {
+        sum += v.getMax();
+      }
+      res.add(format("(int _P%03d 0 %d)", weight, sum));
+
+      StringBuilder varExp = new StringBuilder();
+      varExp.append(format("(= _P%03d (+%n", weight));
+      for (PenaltyVariable v : vars) {
+        varExp.append(format("  %s%n", v.getName()));
+      }
+      varExp.append("))");
+      res.add(varExp.toString());
+      res.add("");
+    }
+
     StringBuilder penaExp = new StringBuilder();
     penaExp.append(format("(= _P (+%n"));
-    for (int i = 0; i < penaVariableNames.size(); i++) {
-      int weight = penaWeights.get(i);
-      String name = penaVariableNames.get(i);
-
-      penaExp.append("  ").append(format("(* %d %s)%n", weight, name));
+    for (int weight : group.keySet()) {
+      penaExp.append("  ").append(format("(* %d _P%03d)%n", weight, weight));
     }
     penaExp.append("))");
-
     res.add(penaExp.toString());
-    res.add(format("(objective minimize _P)"));
+
+    res.add("");
 
     return res;
   }
@@ -104,38 +197,133 @@ public final class SugarModelEncoder implements ModelEncoder {
   @Override
   public List<String> encode(Variable variable) {
     List<String> res = new ArrayList<>();
-    res.add("; variable " + variable.getName());
+
+    res.add(format("(int %s %s)", variable.getName(), domainToString(variable.getDomain())));
+
     for (Integer d : variable.getDomain()) {
-      res.add(format("(bool %s) ; %s", varName(variable, d), variable.getName() + " = " + d));
+      String varName = variable.getName();
+      String intVarName = intVar(variable, d);
+      String boolVarName = boolVar(variable, d);
+
+      res.add(format("(int %s 0 1) ; %s = %d", intVarName, varName, d));
+      res.add(format("(BIND %s %s %d)", varName, intVarName, d));
     }
 
-    StringBuilder orCons = new StringBuilder();
-    orCons.append("(or");
-    for (Integer d : variable.getDomain()) {
-      orCons.append(' ');
-      orCons.append(varName(variable, d));
-    }
-    orCons.append(")");
-    res.add(orCons.toString());
-
-    int domainSize = variable.getDomain().size();
-    for (int i = 0; i < domainSize; i++) {
-      for (int j = i + 1; j < domainSize; j++) {
-        int d1 = variable.getDomain().get(i);
-        int d2 = variable.getDomain().get(j);
-        res.add(format("(or (not %s) (not %s))", varName(variable, d1), varName(variable, d2),
-            variable.getName()));
-      }
-    }
     res.add("");
-
     return res;
+  }
+
+  @Override
+  public List<String> encode(ConflictPointConstraint constraint) {
+    List<String> res = new ArrayList<>();
+
+    if (constraint.getWeight() >= 0) {
+      String penaName = penaltyVarToString(constraint);
+      res.add(format("(int %s 0 1)", penaName));
+
+      penaltyVariables.add(new PenaltyVariable(penaName, 1, constraint.getWeight()));
+    }
+
+    StringBuilder termsExp = new StringBuilder();
+
+    for (int i = 0; i < constraint.size(); i++) {
+      boolean phase = constraint.getPhases().get(i);
+      Variable var = constraint.getVariables().get(i);
+      int val = constraint.getValues().get(i);
+
+      String termExp =
+          phase ? format("(not %s) ", boolVar(var, val)) : format("%s ", boolVar(var, val));
+      termsExp.append(termExp);
+    }
+
+    if (constraint.getWeight() >= 0) {
+      String penaName = penaltyVarToString(constraint);
+      termsExp.append(format("(>= %s 1) ", penaName));
+    }
+
+    termsExp.setLength(termsExp.length() - 1);
+
+    String cons = format("(or %s) ; %s", termsExp.toString(), constraint.getName());
+    res.add(cons);
+    return Collections.unmodifiableList(res);
   }
 
   @Override
   public List<String> encode(LinearConstraint constraint) {
     List<String> res = new ArrayList<>();
-    res.add(format("; constraint %s", constraint.getName()));
+
+    List<String> lhsTerms = new ArrayList<>(constraint.size());
+    for (int i = 0; i < constraint.size(); i++) {
+      int coeff = constraint.getCoeffs().get(i);
+      Variable var = constraint.getVariables().get(i);
+
+      lhsTerms.add(format("(* %d %s)", coeff, var.getName()));
+    }
+
+    if (constraint.getWeight() >= 0) {
+      int lhsMin = calcLhsMin(constraint);
+      int lhsMax = calcLhsMax(constraint);
+
+      String pena = penaltyVarToString(constraint);
+      String pena1 = penaltyVarToString(constraint, 1);
+      String pena2 = penaltyVarToString(constraint, 2);
+
+      int maxPena = -1;
+      int maxPena1 = -1;
+      int maxPena2 = -1;
+      switch (constraint.getOp()) {
+        case EQ:
+          maxPena1 = max(constraint.getRhs() - lhsMin, 0);
+          maxPena2 = max(lhsMax - constraint.getRhs(), 0);
+          lhsTerms.add(format("%s", pena1));
+          lhsTerms.add(format("(- %s)", pena2));
+          break;
+
+        case LE:
+          maxPena = max(lhsMax - constraint.getRhs(), 0);
+          lhsTerms.add(format("(- %s)", pena));
+          break;
+
+        case LT:
+          maxPena = max(lhsMax - constraint.getRhs() + 1, 0);
+          lhsTerms.add(format("(- %s)", pena));
+          break;
+
+        case GE:
+          maxPena = max(constraint.getRhs() - lhsMin, 0);
+          lhsTerms.add(format("%s", pena));
+          break;
+
+        case GT:
+          maxPena = max(constraint.getRhs() - lhsMin + 1, 0);
+          lhsTerms.add(format("%s", pena));
+          break;
+
+        default:
+          throw new IllegalStateException();
+      }
+
+      if (constraint.getOp() == Comparator.EQ) {
+        res.add(format("(int %s 0 %d)", pena1, maxPena1));
+        res.add(format("(int %s 0 %d)", pena2, maxPena2));
+
+        penaltyVariables.add(new PenaltyVariable(pena1, maxPena1, constraint.getWeight()));
+        penaltyVariables.add(new PenaltyVariable(pena2, maxPena2, constraint.getWeight()));
+      } else {
+        res.add(format("(int %s 0 %d)", pena, maxPena));
+
+        penaltyVariables.add(new PenaltyVariable(pena, maxPena, constraint.getWeight()));
+      }
+    }
+
+    res.add(format("(%s (+ %s) %s) ; %s", opName(constraint.getOp()), String.join(" ", lhsTerms),
+        constraint.getRhs(), constraint.getName()));
+    return Collections.unmodifiableList(res);
+  }
+
+  @Override
+  public List<String> encode(PseudoBooleanConstraint constraint) {
+    List<String> res = new ArrayList<>();
 
     StringBuilder lhsExp = new StringBuilder();
     lhsExp.append("(+");
@@ -143,7 +331,8 @@ public final class SugarModelEncoder implements ModelEncoder {
       int coeff = constraint.getCoeffs().get(i);
       Variable var = constraint.getVariables().get(i);
       int val = constraint.getValues().get(i);
-      lhsExp.append(format(" (if %s %d 0)", varName(var, val), coeff));
+
+      lhsExp.append(format(" (* %d %s)", coeff, intVar(var, val)));
     }
 
     if (constraint.getWeight() >= 0) {
@@ -160,12 +349,7 @@ public final class SugarModelEncoder implements ModelEncoder {
       switch (constraint.getOp()) {
         case EQ:
           maxPena1 = max(constraint.getRhs() - lhsMin, 0);
-          res.add(format("(int %s 0 %d)", pena1, maxPena1));
-          res.add(format("(>= %s 0)", pena1));
-
           maxPena2 = max(lhsMax - constraint.getRhs(), 0);
-          res.add(format("(int %s 0 %d)", pena2, maxPena2));
-          res.add(format("(>= %s 0)", pena2));
 
           lhsExp.append(format(" %s", pena1));
           lhsExp.append(format(" (- %s)", pena2));
@@ -173,29 +357,21 @@ public final class SugarModelEncoder implements ModelEncoder {
 
         case LE:
           maxPena = max(lhsMax - constraint.getRhs(), 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" (- %s)", pena));
           break;
 
         case LT:
           maxPena = max(lhsMax - constraint.getRhs() + 1, 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" (- %s)", pena));
           break;
 
         case GE:
           maxPena = max(constraint.getRhs() - lhsMin, 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" %s", pena));
           break;
 
         case GT:
           maxPena = max(constraint.getRhs() - lhsMin + 1, 0);
-          res.add(format("(int %s 0 %d)", pena, maxPena));
-          res.add(format("(>= %s 0)", pena));
           lhsExp.append(format(" %s", pena));
           break;
 
@@ -204,17 +380,15 @@ public final class SugarModelEncoder implements ModelEncoder {
       }
 
       if (constraint.getOp() == Comparator.EQ) {
-        penaVariableNames.add(pena1);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena1);
+        res.add(format("(int %s 0 %d)", pena1, maxPena1));
+        res.add(format("(int %s 0 %d)", pena2, maxPena2));
 
-        penaVariableNames.add(pena2);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena2);
+        penaltyVariables.add(new PenaltyVariable(pena1, maxPena1, constraint.getWeight()));
+        penaltyVariables.add(new PenaltyVariable(pena2, maxPena2, constraint.getWeight()));
       } else {
-        penaVariableNames.add(pena);
-        penaWeights.add(constraint.getWeight());
-        penaMaxs.add(maxPena);
+        res.add(format("(int %s 0 %d)", pena, maxPena));
+
+        penaltyVariables.add(new PenaltyVariable(pena, maxPena, constraint.getWeight()));
       }
     }
     lhsExp.append(")");
@@ -222,7 +396,6 @@ public final class SugarModelEncoder implements ModelEncoder {
     String cons = format("(%s %s %d) ; %s", opName(constraint.getOp()), lhsExp.toString(),
         constraint.getRhs(), constraint.getName());
     res.add(cons);
-    res.add("");
 
     return res;
   }
@@ -245,8 +418,8 @@ public final class SugarModelEncoder implements ModelEncoder {
     for (int d : domain) {
       for (int i = 0; i < vars.size(); i++) {
         for (int j = i + 1; j < vars.size(); j++) {
-          String v1Exp = varName(vars.get(i), d);
-          String v2Exp = varName(vars.get(j), d);
+          String v1Exp = boolVar(vars.get(i), d);
+          String v2Exp = boolVar(vars.get(j), d);
           res.add(format("(or (not %s) (not %s))", v1Exp, v2Exp));
         }
       }
@@ -257,11 +430,10 @@ public final class SugarModelEncoder implements ModelEncoder {
 
   @Override
   public List<String> encode(Model model) {
-    penaVariableNames = new ArrayList<>();
-    penaMaxs = new ArrayList<>();
-    penaWeights = new ArrayList<>();
+    penaltyVariables = new ArrayList<>();
 
     List<String> body = new ArrayList<>();
+    body.addAll(generatePredicates());
 
     for (Variable var : model.getVariables()) {
       body.addAll(encode(var));
