@@ -1,4 +1,4 @@
-package jp.ac.meiji.igusso.coptool;
+package jp.ac.meiji.igusso.coptool.model;
 
 import java.util.List;
 import java.util.regex.Pattern;

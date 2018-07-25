@@ -1,4 +1,4 @@
-package jp.ac.meiji.igusso.coptool;
+package jp.ac.meiji.igusso.coptool.model;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -9,8 +9,4 @@ public interface Constraint {
   public String getName();
 
   public int getWeight();
-
-  public boolean feasible(Model model);
-
-  public List<String> encode(ModelEncoder encoder);
 }

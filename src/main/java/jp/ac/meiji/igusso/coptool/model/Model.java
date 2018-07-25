@@ -1,4 +1,4 @@
-package jp.ac.meiji.igusso.coptool;
+package jp.ac.meiji.igusso.coptool.model;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -54,7 +54,6 @@ public final class Model {
       }
     }
 
-    constraint.feasible(this);
     constraints.add(constraint);
   }
 

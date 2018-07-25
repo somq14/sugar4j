@@ -1,4 +1,4 @@
-package jp.ac.meiji.igusso.coptool;
+package jp.ac.meiji.igusso.coptool.model;
 
 import lombok.NonNull;
 import lombok.Value;
@@ -26,22 +26,6 @@ public final class ConflictPointConstraint implements Constraint {
 
   public int size() {
     return variables.size();
-  }
-
-  @Override
-  public boolean feasible(Model model) {
-    List<Variable> modelVariables = model.getVariables();
-    for (Variable v : variables) {
-      if (!modelVariables.contains(v)) {
-        throw new IllegalStateException("Variable " + v + " Is Not In Model");
-      }
-    }
-    return true;
-  }
-
-  @Override
-  public List<String> encode(ModelEncoder encoder) {
-    return encoder.encode(this);
   }
 
   public static Builder of(String name) {

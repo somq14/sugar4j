@@ -1,8 +1,8 @@
-package jp.ac.meiji.igusso.coptool;
+package jp.ac.meiji.igusso.coptool.model;
 
 import org.junit.Test;
 
-import static jp.ac.meiji.igusso.coptool.Comparator.*;
+import static jp.ac.meiji.igusso.coptool.model.Comparator.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;

@@ -7,13 +7,13 @@ import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.ShiftOffRequests;
 import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.ShiftOnRequests;
 import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.Staff;
 
-import jp.ac.meiji.igusso.coptool.Comparator;
-import jp.ac.meiji.igusso.coptool.ConflictPointConstraint;
-import jp.ac.meiji.igusso.coptool.Constraint;
-import jp.ac.meiji.igusso.coptool.LinearConstraint;
-import jp.ac.meiji.igusso.coptool.Model;
-import jp.ac.meiji.igusso.coptool.PseudoBooleanConstraint;
-import jp.ac.meiji.igusso.coptool.Variable;
+import jp.ac.meiji.igusso.coptool.model.Comparator;
+import jp.ac.meiji.igusso.coptool.model.ConflictPointConstraint;
+import jp.ac.meiji.igusso.coptool.model.Constraint;
+import jp.ac.meiji.igusso.coptool.model.LinearConstraint;
+import jp.ac.meiji.igusso.coptool.model.Model;
+import jp.ac.meiji.igusso.coptool.model.PseudoBooleanConstraint;
+import jp.ac.meiji.igusso.coptool.model.Variable;
 import lombok.NonNull;
 
 import java.util.ArrayList;

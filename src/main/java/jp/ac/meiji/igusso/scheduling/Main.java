@@ -1,9 +1,6 @@
 package jp.ac.meiji.igusso.scheduling;
 
-import jp.ac.meiji.igusso.coptool.Model;
-import jp.ac.meiji.igusso.coptool.ModelEncoder;
-import jp.ac.meiji.igusso.coptool.ScopModelEncoder;
-import jp.ac.meiji.igusso.coptool.SugarModelEncoder;
+import jp.ac.meiji.igusso.coptool.model.Model;
 
 import java.io.FileReader;
 import java.util.List;
@@ -22,16 +19,16 @@ public final class Main {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(sp);
     Model model = spe.encode();
 
-    ModelEncoder encoder = null;
-    if (args.length >= 2 && "sugar".equals(args[1])) {
-      encoder = SugarModelEncoder.getInstance();
-    } else if (args.length >= 2 && "scop".equals(args[1])) {
-      encoder = ScopModelEncoder.getInstance();
-    }
+    // ModelEncoder encoder = null;
+    // if (args.length >= 2 && "sugar".equals(args[1])) {
+    //   encoder = SugarModelEncoder.getInstance();
+    // } else if (args.length >= 2 && "scop".equals(args[1])) {
+    //   encoder = ScopModelEncoder.getInstance();
+    // }
 
-    List<String> body = encoder.encode(model);
-    for (String line : body) {
-      System.out.println(line);
-    }
+    // List<String> body = encoder.encode(model);
+    // for (String line : body) {
+    //   System.out.println(line);
+    // }
   }
 }

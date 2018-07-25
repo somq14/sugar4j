@@ -1,4 +1,4 @@
-package jp.ac.meiji.igusso.coptool;
+package jp.ac.meiji.igusso.coptool.model;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
