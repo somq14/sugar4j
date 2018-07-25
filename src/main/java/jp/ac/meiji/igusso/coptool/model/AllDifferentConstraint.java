@@ -1,26 +1,36 @@
 package jp.ac.meiji.igusso.coptool.model;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
-@Value
-public final class AllDifferentConstraint implements Constraint {
-  String name;
-  List<Variable> variables;
-  int weight;
+@ToString
+@EqualsAndHashCode
+public final class AllDifferentConstraint extends AbstractConstraint implements Iterable<Variable> {
+  @Getter private final List<Variable> variables;
 
-  private AllDifferentConstraint(String name, List<Variable> variables, int weight) {
-    this.name = name;
+  private AllDifferentConstraint(String name, int weight, List<Variable> variables) {
+    super(name, weight);
     this.variables = Collections.unmodifiableList(new ArrayList<>(variables));
-    this.weight = weight;
   }
 
   public int size() {
     return variables.size();
+  }
+
+  public Variable get(int index) {
+    return variables.get(index);
+  }
+
+  @Override
+  public Iterator<Variable> iterator() {
+    return variables.iterator();
   }
 
   public static Builder of(String name) {
@@ -31,32 +41,32 @@ public final class AllDifferentConstraint implements Constraint {
     return new Builder(name, weight);
   }
 
+  @ToString
+  @EqualsAndHashCode
   public static class Builder {
-    private String name;
-    private final List<Variable> variables = new ArrayList<Variable>();
-    private int weight;
+    @Getter private String name;
+    @Getter private final List<Variable> variables = new ArrayList<Variable>();
+    @Getter private int weight;
 
     private Builder(@NonNull String name, int weight) {
       if (!Constraint.NAME_PATTERN.matcher(name).matches()) {
         throw new IllegalArgumentException("Invalid Constraint Name: " + name);
       }
-      weight = Math.max(-1, weight);
 
       this.name = name;
-      this.weight = weight;
+      this.weight = Math.max(-1, weight);
     }
 
     public Builder addVariable(@NonNull Variable var) {
-      if (!variables.isEmpty() && !var.getDomain().equals(variables.get(0).getDomain())) {
-        throw new IllegalStateException(
-            "Variables Domain Must Be Same: " + var + ", " + variables.get(0).getDomain());
+      if (variables.contains(var)) {
+        throw new IllegalArgumentException("Duplicated Variable: " + var);
       }
       variables.add(var);
       return this;
     }
 
     public AllDifferentConstraint build() {
-      return new AllDifferentConstraint(name, variables, weight);
+      return new AllDifferentConstraint(name, weight, variables);
     }
   }
 }

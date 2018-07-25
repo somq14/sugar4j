@@ -8,58 +8,49 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 @ToString
 @EqualsAndHashCode
 public final class Model {
   private List<Variable> variables = new ArrayList<>();
+  private Map<String, Variable> variableMap = new TreeMap<>();
+
   private List<Constraint> constraints = new ArrayList<>();
+  private Map<String, Constraint> constraintMap = new TreeMap<>();
 
   public Model() {}
 
-  public Variable addVariable(@NonNull String name, @NonNull List<Integer> domain) {
-    for (Variable v : variables) {
-      if (v.getName().equals(name)) {
-        throw new IllegalArgumentException("The Variable Already Has Been Registered: " + name);
-      }
-    }
-
-    Variable var = new VariableImpl(name, domain);
-    variables.add(var);
-    return var;
-  }
-
-  public Variable addVariable(@NonNull String name, int domainMin, int domainMax) {
-    if (domainMin > domainMax) {
+  public void addVariable(@NonNull Variable variable) {
+    if (variableMap.containsKey(variable.getName())) {
       throw new IllegalArgumentException(
-          "Invalid Domain Range: [" + domainMin + ", " + domainMax + ")");
+          "The Variable Already Has Been Registered: " + variable.getName());
     }
 
-    List<Integer> domain = new ArrayList<>(domainMax - domainMin + 1);
-    for (int i = domainMin; i <= domainMax; i++) {
-      domain.add(i);
-    }
-    return addVariable(name, domain);
+    variables.add(variable);
+    variableMap.put(variable.getName(), variable);
   }
 
-  public Variable addVariable(@NonNull String name, int domainSize) {
-    return addVariable(name, 0, domainSize - 1);
+  public void addVariables(@NonNull Collection<Variable> variables) {
+    for (Variable variable : variables) {
+      addVariable(variable);
+    }
   }
 
   public void addConstraint(@NonNull Constraint constraint) {
-    for (Constraint cons : constraints) {
-      if (cons.getName().equals(constraint.getName())) {
-        throw new IllegalArgumentException(
-            "The Constraint Already Has Been Registered: " + constraint.getName());
-      }
+    if (constraintMap.containsKey(constraint.getName())) {
+      throw new IllegalArgumentException(
+          "The Constraint Already Has Been Registered: " + constraint.getName());
     }
 
     constraints.add(constraint);
+    constraintMap.put(constraint.getName(), constraint);
   }
 
   public void addConstraints(@NonNull Collection<Constraint> constraints) {
-    for (Constraint cons : constraints) {
-      addConstraint(cons);
+    for (Constraint constraint : constraints) {
+      addConstraint(constraint);
     }
   }
 

@@ -1,71 +1,83 @@
 package jp.ac.meiji.igusso.coptool.model;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
-@Value
-public final class LinearConstraint implements Constraint {
-  String name;
-  List<Integer> coeffs;
-  List<Variable> variables;
-  Comparator op;
-  int rhs;
-  int weight;
+@ToString
+@EqualsAndHashCode
+public final class LinearConstraint extends AbstractConstraint implements Iterable<LinearTerm> {
+  @Getter private final List<LinearTerm> terms;
+  @Getter private final Comparator op;
+  @Getter private final int rhs;
 
-  private LinearConstraint(String name, List<Integer> coeffs, List<Variable> variables,
-      Comparator op, int rhs, int weight) {
-    this.name = name;
-    this.weight = weight;
-    this.coeffs = Collections.unmodifiableList(new ArrayList<>(coeffs));
-    this.variables = Collections.unmodifiableList(new ArrayList<>(variables));
+  private LinearConstraint(
+      String name, List<LinearTerm> terms, Comparator op, int rhs, int weight) {
+    super(name, weight);
+
+    this.terms = Collections.unmodifiableList(new ArrayList<>(terms));
     this.op = op;
     this.rhs = rhs;
   }
 
   public int size() {
-    return variables.size();
+    return terms.size();
   }
 
-  public static Builder of(String name, Comparator op, int rhs) {
+  public LinearTerm get(int index) {
+    return terms.get(index);
+  }
+
+  @Override
+  public Iterator<LinearTerm> iterator() {
+    return terms.iterator();
+  }
+
+  public static Builder of(@NonNull String name, @NonNull Comparator op, int rhs) {
     return new Builder(name, op, rhs, -1);
   }
 
-  public static Builder of(String name, Comparator op, int rhs, int weight) {
+  public static Builder of(@NonNull String name, @NonNull Comparator op, int rhs, int weight) {
     return new Builder(name, op, rhs, weight);
   }
 
+  @ToString
+  @EqualsAndHashCode
   public static class Builder {
-    private String name;
-    private final List<Integer> coeffs = new ArrayList<Integer>();
-    private final List<Variable> variables = new ArrayList<Variable>();
-    private Comparator op;
-    private int rhs;
-    private int weight;
+    @Getter private String name;
+    @Getter private final List<LinearTerm> terms = new ArrayList<>();
+    @Getter private Comparator op;
+    @Getter private int rhs;
+    @Getter private int weight;
 
     private Builder(@NonNull String name, @NonNull Comparator op, int rhs, int weight) {
       if (!Constraint.NAME_PATTERN.matcher(name).matches()) {
         throw new IllegalArgumentException("Invalid Constraint Name: " + name);
       }
-      weight = Math.max(-1, weight);
 
       this.name = name;
       this.op = op;
       this.rhs = rhs;
-      this.weight = weight;
+      this.weight = Math.max(-1, weight);
     }
 
-    public Builder addTerm(int coeff, @NonNull Variable var) {
-      coeffs.add(coeff);
-      variables.add(var);
+    public Builder addTerm(@NonNull LinearTerm term) {
+      terms.add(term);
       return this;
     }
 
+    public Builder addTerm(int coeff, @NonNull Variable variable) {
+      return addTerm(LinearTerm.of(coeff, variable));
+    }
+
     public LinearConstraint build() {
-      return new LinearConstraint(name, coeffs, variables, op, rhs, weight);
+      return new LinearConstraint(name, terms, op, rhs, weight);
     }
   }
 }

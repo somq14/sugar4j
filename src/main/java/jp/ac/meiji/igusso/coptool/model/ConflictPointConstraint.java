@@ -1,77 +1,78 @@
 package jp.ac.meiji.igusso.coptool.model;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
-@Value
-public final class ConflictPointConstraint implements Constraint {
-  String name;
-  List<Boolean> phases;
-  List<Variable> variables;
-  List<Integer> values;
-  int weight;
+@ToString
+@EqualsAndHashCode
+public final class ConflictPointConstraint
+    extends AbstractConstraint implements Iterable<PredicateTerm> {
+  @Getter private final List<PredicateTerm> terms;
 
-  private ConflictPointConstraint(String name, List<Boolean> phases, List<Variable> variables,
-      List<Integer> values, int weight) {
-    this.name = name;
-    this.phases = Collections.unmodifiableList(new ArrayList<>(phases));
-    this.variables = Collections.unmodifiableList(new ArrayList<>(variables));
-    this.values = Collections.unmodifiableList(new ArrayList<>(values));
-    this.weight = weight;
+  private ConflictPointConstraint(String name, List<PredicateTerm> terms, int weight) {
+    super(name, weight);
+    this.terms = Collections.unmodifiableList(new ArrayList<>(terms));
   }
 
   public int size() {
-    return variables.size();
+    return terms.size();
   }
 
-  public static Builder of(String name) {
+  public PredicateTerm get(int index) {
+    return terms.get(index);
+  }
+
+  @Override
+  public Iterator<PredicateTerm> iterator() {
+    return terms.iterator();
+  }
+
+  public static Builder of(@NonNull String name) {
     return new Builder(name, -1);
   }
 
-  public static Builder of(String name, int weight) {
+  public static Builder of(@NonNull String name, int weight) {
     return new Builder(name, weight);
   }
 
+  @ToString
+  @EqualsAndHashCode
   public static class Builder {
-    private String name;
-    private final List<Boolean> phases = new ArrayList<>();
-    private final List<Variable> variables = new ArrayList<>();
-    private final List<Integer> values = new ArrayList<>();
-    private int weight;
+    @Getter private String name;
+    @Getter private final List<PredicateTerm> terms = new ArrayList<>();
+    @Getter private int weight;
 
     private Builder(@NonNull String name, int weight) {
       if (!Constraint.NAME_PATTERN.matcher(name).matches()) {
         throw new IllegalArgumentException("Invalid Constraint Name: " + name);
       }
-      weight = Math.max(-1, weight);
 
       this.name = name;
-      this.weight = weight;
+      this.weight = Math.max(-1, weight);
     }
 
-    public Builder addTerm(@NonNull Variable var, int val, boolean phase) {
-      if (!var.getDomain().contains(val)) {
-        throw new IllegalArgumentException(
-            "The Variable's Domain Does Not Contain The Value: " + var + " " + val);
-      }
-
-      phases.add(phase);
-      variables.add(var);
-      values.add(val);
+    public Builder addTerm(@NonNull PredicateTerm term) {
+      terms.add(term);
       return this;
     }
 
-    public Builder addTerm(@NonNull Variable var, int val) {
-      return addTerm(var, val, true);
+    public Builder addTerm(@NonNull Variable variable, int value, boolean phase) {
+      return addTerm(PredicateTerm.of(variable, value, phase));
+    }
+
+    public Builder addTerm(@NonNull Variable variable, int value) {
+      return addTerm(variable, value, true);
     }
 
     public ConflictPointConstraint build() {
-      return new ConflictPointConstraint(name, phases, variables, values, weight);
+      return new ConflictPointConstraint(name, terms, weight);
     }
   }
 }
-

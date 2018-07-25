@@ -184,7 +184,8 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int d : D) {
         String varName = String.format("x_i%02d_d%02d", i, d);
-        x[i][d] = model.addVariable(varName, T.length);
+        x[i][d] = Variable.of(varName, T.length);
+        model.addVariable(x[i][d]);
       }
     }
 
@@ -192,7 +193,8 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int w : W) {
         String varName = String.format("k_i%02d_w%d", i, w);
-        k[i][w] = model.addVariable(varName, 2);
+        k[i][w] = Variable.of(varName, 2);
+        model.addVariable(k[i][w]);
       }
     }
   }
