@@ -1,6 +1,12 @@
 package jp.ac.meiji.igusso.scheduling;
 
 import jp.ac.meiji.igusso.coptool.model.Model;
+import jp.ac.meiji.igusso.coptool.model.Constraint;
+import jp.ac.meiji.igusso.coptool.model.Variable;
+
+import jp.ac.meiji.igusso.coptool.scop.Model2ScopTranslator;
+import jp.ac.meiji.igusso.coptool.scop.Scop4j;
+import jp.ac.meiji.igusso.coptool.scop.Solution;
 
 import java.io.FileReader;
 import java.util.List;
@@ -8,7 +14,7 @@ import java.util.List;
 public final class Main {
   public static void main(String[] args) throws Exception {
     if (args.length == 0) {
-      System.err.println("Main InstanceFile [sugar|scop]");
+      System.err.println("Main InstanceFile");
       System.exit(1);
     }
 
@@ -19,16 +25,17 @@ public final class Main {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(sp);
     Model model = spe.encode();
 
-    // ModelEncoder encoder = null;
-    // if (args.length >= 2 && "sugar".equals(args[1])) {
-    //   encoder = SugarModelEncoder.getInstance();
-    // } else if (args.length >= 2 && "scop".equals(args[1])) {
-    //   encoder = ScopModelEncoder.getInstance();
-    // }
+    Model2ScopTranslator translator = Model2ScopTranslator.newInstance();
+    Scop4j scop4j = Scop4j.newInstance();
+    for (Variable variable : model.getVariables()) {
+      scop4j.addVariable(translator.translate(variable));
+    }
+    for (Constraint constraint : model.getConstraints()) {
+      scop4j.addConstraint(translator.translate(constraint));
+    }
 
-    // List<String> body = encoder.encode(model);
-    // for (String line : body) {
-    //   System.out.println(line);
-    // }
+    Solution solution = scop4j.solve();
+    System.out.println("hard penalty = " + solution.getHardPenalty());
+    System.out.println("soft penalty = " + solution.getSoftPenalty());
   }
 }
