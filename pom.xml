@@ -29,6 +29,14 @@
       <version>1.18.0</version>
       <scope>provided</scope>
     </dependency>
+
+    <dependency>
+      <groupId>jp.kobe_u.sugar</groupId>
+      <artifactId>sugar</artifactId>
+      <version>2.3.3</version>
+      <scope>system</scope>
+      <systemPath>${basedir}/lib/sugar-v2-3-3.jar</systemPath>
+    </dependency>
   </dependencies>
 
   <build>
