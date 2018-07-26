@@ -63,8 +63,8 @@ public final class ConflictPointConstraint
       return this;
     }
 
-    public Builder addTerm(@NonNull Variable variable, int value, boolean phase) {
-      return addTerm(PredicateTerm.of(variable, value, phase));
+    public Builder addTerm(@NonNull Variable variable, int value, boolean positive) {
+      return addTerm(PredicateTerm.of(variable, value, positive));
     }
 
     public Builder addTerm(@NonNull Variable variable, int value) {

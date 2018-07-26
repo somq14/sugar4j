@@ -10,9 +10,9 @@ import lombok.ToString;
 public final class PredicateTerm {
   @Getter private final Variable variable;
   @Getter private final int value;
-  @Getter private final boolean phase;
+  @Getter private final boolean positive;
 
-  private PredicateTerm(@NonNull Variable variable, int value, boolean phase) {
+  private PredicateTerm(@NonNull Variable variable, int value, boolean positive) {
     if (!variable.getDomain().contains(value)) {
       throw new IllegalArgumentException(
           "The Variable's Domain Does Not Contain The Value: " + variable + " " + value);
@@ -20,15 +20,15 @@ public final class PredicateTerm {
 
     this.variable = variable;
     this.value = value;
-    this.phase = phase;
+    this.positive = positive;
   }
 
   public PredicateTerm not() {
-    return new PredicateTerm(variable, value, !phase);
+    return new PredicateTerm(variable, value, !positive);
   }
 
-  public static PredicateTerm of(@NonNull Variable variable, int value, boolean phase) {
-    return new PredicateTerm(variable, value, phase);
+  public static PredicateTerm of(@NonNull Variable variable, int value, boolean positive) {
+    return new PredicateTerm(variable, value, positive);
   }
 
   public static PredicateTerm of(@NonNull Variable variable, int value) {
