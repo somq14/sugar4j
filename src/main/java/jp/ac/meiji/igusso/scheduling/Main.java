@@ -1,7 +1,7 @@
 package jp.ac.meiji.igusso.scheduling;
 
-import jp.ac.meiji.igusso.coptool.model.Model;
 import jp.ac.meiji.igusso.coptool.model.Constraint;
+import jp.ac.meiji.igusso.coptool.model.Model;
 import jp.ac.meiji.igusso.coptool.model.Variable;
 
 import jp.ac.meiji.igusso.coptool.scop.Model2ScopTranslator;
