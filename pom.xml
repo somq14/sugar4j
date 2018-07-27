@@ -37,6 +37,12 @@
       <scope>system</scope>
       <systemPath>${basedir}/lib/sugar-v2-3-3.jar</systemPath>
     </dependency>
+
+    <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>4.5.2</version>
+    </dependency>
   </dependencies>
 
   <build>
