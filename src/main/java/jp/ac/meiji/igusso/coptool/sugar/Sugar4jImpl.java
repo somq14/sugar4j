@@ -102,7 +102,7 @@ final class Sugar4jImpl implements Sugar4j {
   }
 
   @Override
-  public void addConstraint(Expression expression) {
+  public void addExpression(Expression expression) {
     try {
       converter.convert(expression);
     } catch (SugarException ex) {
@@ -111,9 +111,21 @@ final class Sugar4jImpl implements Sugar4j {
   }
 
   @Override
+  public void addExpressions(Collection<Expression> expressions) {
+    for (Expression expression : expressions) {
+      addExpression(expression);
+    }
+  }
+
+  @Override
+  public void addConstraint(Expression expression) {
+    addExpression(expression);
+  }
+
+  @Override
   public void addConstraints(Collection<Expression> expressions) {
     for (Expression expression : expressions) {
-      addConstraint(expression);
+      addExpression(expression);
     }
   }
 

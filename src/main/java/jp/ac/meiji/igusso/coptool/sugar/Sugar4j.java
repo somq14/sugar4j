@@ -20,6 +20,10 @@ public interface Sugar4j extends Closeable {
 
   public Expression addIntVariable(String name, Collection<Integer> domain);
 
+  public void addExpression(Expression expression);
+
+  public void addExpressions(Collection<Expression> expressions);
+
   public void addConstraint(Expression expression);
 
   public void addConstraints(Collection<Expression> expressions);

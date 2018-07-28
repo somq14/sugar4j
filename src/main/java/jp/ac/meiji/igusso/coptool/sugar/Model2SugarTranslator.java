@@ -471,4 +471,27 @@ public final class Model2SugarTranslator {
     constraintNameSpace.add(constraint.getName());
     return ret;
   }
+
+  @Override
+  public String toString() {
+    StringBuilder ret = new StringBuilder();
+
+    String newLine = String.format("%n");
+    for (List<Expression> expressions : variableMap.values()) {
+      for (Expression expression : expressions) {
+        ret.append(expression).append(newLine);
+      }
+    }
+    for (List<Expression> expressions : constraintMap.values()) {
+      for (Expression expression : expressions) {
+        ret.append(expression).append(newLine);
+      }
+    }
+    if (hasObjective()) {
+      for (Expression expression : translateObjective()) {
+        ret.append(expression).append(newLine);
+      }
+    }
+    return ret.toString();
+  }
 }
