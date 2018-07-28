@@ -15,7 +15,7 @@ public class IpasirSolverTest {
 
   @Before
   public void before() {
-    solver = IpasirSolver.newInstance("minisat");
+    solver = IpasirSolver.newInstance("glueminisat");
   }
 
   @After
@@ -26,7 +26,7 @@ public class IpasirSolverTest {
   @Test
   public void testName() {
     String actual = solver.getName();
-    String expected = "minisat220";
+    String expected = "glueminisat2.2.5";
     assertThat(actual, is(expected));
   }
 
