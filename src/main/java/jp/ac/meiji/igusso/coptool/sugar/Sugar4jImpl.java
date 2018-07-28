@@ -50,6 +50,22 @@ final class Sugar4jImpl implements Sugar4j {
     this.encoder.problem = new SatSolver2ProblemAdapter(solver);
   }
 
+  private void update() throws SugarException {
+    try {
+      csp.propagate();
+      Simplifier simplifier = new Simplifier(csp);
+      simplifier.simplify();
+      encoder.encodeDelta();
+
+      csp.commit();
+      encoder.commit();
+    } catch (IOException ex1) {
+      throw new SugarException("IOException occurred", ex1);
+    } catch (SugarException ex2) {
+      throw ex2;
+    }
+  }
+
   @Override
   public Expression addBoolVariable(String name) {
     addConstraint(create(Expression.BOOL_DEFINITION, create(name)));
@@ -102,13 +118,16 @@ final class Sugar4jImpl implements Sugar4j {
   }
 
   @Override
-  public void addAssumption(Expression boolVariable, boolean isPositive) {
+  public void addAssumption(Expression boolVariable, boolean isPositive) throws SugarException {
+    update();
+
     BooleanVariable variable = csp.getBooleanVariable(boolVariable.stringValue());
     solver.assume(isPositive ? variable.getCode() : -variable.getCode());
   }
 
   @Override
-  public void addAssumption(Expression intVariable, Comparator op, int value) {
+  public void addAssumption(Expression intVariable, Comparator op, int value)
+      throws SugarException {
     if (op == Comparator.LT) {
       addAssumption(intVariable, Comparator.LE, value - 1);
       return;
@@ -122,6 +141,8 @@ final class Sugar4jImpl implements Sugar4j {
       addAssumption(intVariable, Comparator.GE, value);
       return;
     }
+
+    update();
 
     IntegerVariable variable = csp.getIntegerVariable(intVariable.stringValue());
 
@@ -185,19 +206,7 @@ final class Sugar4jImpl implements Sugar4j {
 
   @Override
   public Solution solve() throws SugarException {
-    try {
-      csp.propagate();
-      Simplifier simplifier = new Simplifier(csp);
-      simplifier.simplify();
-      encoder.encodeDelta();
-
-      csp.commit();
-      encoder.commit();
-    } catch (IOException ex1) {
-      throw new SugarException("IOException occurred", ex1);
-    } catch (SugarException ex2) {
-      throw ex2;
-    }
+    update();
 
     List<Integer> solution = solver.solve();
     if (solution.get(0) == SatSolver.UNSAT) {

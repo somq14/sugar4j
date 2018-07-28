@@ -140,7 +140,7 @@ public final class Sugar4jTest {
   }
 
   @Test
-  public void testIntAssume() throws Exception {
+  public void testIntAssume1() throws Exception {
     sugar4j.addConstraint(create(Expression.LT, iv[0], iv[1]));
     sugar4j.addConstraint(create(Expression.LT, iv[1], iv[2]));
 
@@ -170,6 +170,46 @@ public final class Sugar4jTest {
     sugar4j.addAssumption(iv[0], Comparator.GE, 3);
     solution = sugar4j.solve();
     assertThat(solution.isSat(), is(false));
+  }
+
+  @Test
+  public void testIntAssume2() throws Exception {
+    sugar4j.addConstraint(create(Expression.EQ, iv[0], iv[1]));
+    sugar4j.addConstraint(create(Expression.EQ, iv[1], iv[2]));
+
+    sugar4j.addAssumption(iv[0], Comparator.GE, 10);
+
+    Solution solution = sugar4j.solve();
+    assertThat(solution.isSat(), is(false));
+  }
+
+  @Test
+  public void testIntAssume3() throws Exception {
+    sugar4j.addConstraint(create(Expression.EQ, iv[0], iv[1]));
+    sugar4j.addConstraint(create(Expression.EQ, iv[1], iv[2]));
+
+    sugar4j.addAssumption(iv[0], Comparator.LE, -1);
+
+    Solution solution = sugar4j.solve();
+    assertThat(solution.isSat(), is(false));
+  }
+
+  @Test
+  public void testIntAssume4() throws Exception {
+    sugar4j.addConstraint(create(Expression.EQ, iv[0], iv[1]));
+    sugar4j.addConstraint(create(Expression.EQ, iv[1], iv[2]));
+
+    Solution solution = null;
+
+    sugar4j.addAssumption(iv[0], Comparator.EQ, 1);
+    solution = sugar4j.solve();
+    assertThat(solution.isSat(), is(true));
+    assertThat(solution.getIntMap().get(iv[0]), is(1));
+
+    sugar4j.addAssumption(iv[0], Comparator.EQ, 2);
+    solution = sugar4j.solve();
+    assertThat(solution.isSat(), is(true));
+    assertThat(solution.getIntMap().get(iv[0]), is(2));
   }
 
   @Test

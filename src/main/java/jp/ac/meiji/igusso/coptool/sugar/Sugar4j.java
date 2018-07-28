@@ -24,9 +24,9 @@ public interface Sugar4j extends Closeable {
 
   public void addConstraints(Collection<Expression> expressions);
 
-  public void addAssumption(Expression boolVariable, boolean isPositive);
+  public void addAssumption(Expression boolVariable, boolean isPositive) throws SugarException;
 
-  public void addAssumption(Expression intVariable, Comparator op, int value);
+  public void addAssumption(Expression intVariable, Comparator op, int value) throws SugarException;
 
   public Solution solve() throws SugarException;
 }
