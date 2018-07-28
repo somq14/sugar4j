@@ -34,8 +34,6 @@
       <groupId>jp.kobe_u.sugar</groupId>
       <artifactId>sugar</artifactId>
       <version>2.3.3</version>
-      <scope>system</scope>
-      <systemPath>${basedir}/lib/sugar-v2-3-3.jar</systemPath>
     </dependency>
 
     <dependency>
@@ -100,6 +98,26 @@
           <addOutputDirectory>false</addOutputDirectory>
           <sourceDirectory>src/main/java</sourceDirectory>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>
