@@ -79,6 +79,7 @@
           <charset>UTF-8</charset>
           <docencoding>UTF-8</docencoding>
           <sourcepath>target/generated-sources/delombok</sourcepath>
+          <additionalOptions>-html5</additionalOptions>
         </configuration>
       </plugin>
 
