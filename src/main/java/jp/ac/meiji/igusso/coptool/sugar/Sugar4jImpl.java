@@ -40,6 +40,9 @@ final class Sugar4jImpl implements Sugar4j {
   private final Encoder encoder;
 
   Sugar4jImpl(@NonNull SatSolver solver) {
+    /* こうすると何故か動く */
+    Converter.INCREMENTAL_PROPAGATION = false;
+
     this.solver = solver;
 
     this.csp = new CSP();
