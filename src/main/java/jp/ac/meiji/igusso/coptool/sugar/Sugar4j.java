@@ -32,5 +32,7 @@ public interface Sugar4j extends Closeable {
 
   public void addAssumption(Expression intVariable, Comparator op, int value) throws SugarException;
 
+  public void update() throws SugarException;
+
   public Solution solve() throws SugarException;
 }

@@ -53,22 +53,6 @@ final class Sugar4jImpl implements Sugar4j {
     this.encoder.problem = new SatSolver2ProblemAdapter(solver);
   }
 
-  private void update() throws SugarException {
-    try {
-      csp.propagate();
-      Simplifier simplifier = new Simplifier(csp);
-      simplifier.simplify();
-      encoder.encodeDelta();
-
-      csp.commit();
-      encoder.commit();
-    } catch (IOException ex1) {
-      throw new SugarException("IOException occurred", ex1);
-    } catch (SugarException ex2) {
-      throw ex2;
-    }
-  }
-
   @Override
   public Expression addBoolVariable(String name) {
     addConstraint(create(Expression.BOOL_DEFINITION, create(name)));
@@ -218,6 +202,24 @@ final class Sugar4jImpl implements Sugar4j {
       this.intMap = Collections.unmodifiableMap(intMap);
     }
   }
+
+  @Override
+  public void update() throws SugarException {
+    try {
+      csp.propagate();
+      Simplifier simplifier = new Simplifier(csp);
+      simplifier.simplify();
+      encoder.encodeDelta();
+
+      csp.commit();
+      encoder.commit();
+    } catch (IOException ex1) {
+      throw new SugarException("IOException occurred", ex1);
+    } catch (SugarException ex2) {
+      throw ex2;
+    }
+  }
+
 
   @Override
   public Solution solve() throws SugarException {
