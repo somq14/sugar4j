@@ -3,7 +3,13 @@ package jp.ac.meiji.igusso.coptool.sugar;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.format;
-import static jp.kobe_u.sugar.expression.Expression.*;
+
+import static jp.kobe_u.sugar.expression.Expression.ADD;
+import static jp.kobe_u.sugar.expression.Expression.INT_DEFINITION;
+import static jp.kobe_u.sugar.expression.Expression.MUL;
+import static jp.kobe_u.sugar.expression.Expression.ONE;
+import static jp.kobe_u.sugar.expression.Expression.ZERO;
+import static jp.kobe_u.sugar.expression.Expression.create;
 
 import jp.ac.meiji.igusso.coptool.model.AllDifferentConstraint;
 import jp.ac.meiji.igusso.coptool.model.Comparator;
@@ -88,15 +94,15 @@ public final class Model2SugarTranslator {
   private static Expression opExp(Comparator op) {
     switch (op) {
       case EQ:
-        return EQ;
+        return Expression.EQ;
       case LE:
-        return LE;
+        return Expression.LE;
       case LT:
-        return LT;
+        return Expression.LT;
       case GE:
-        return GE;
+        return Expression.GE;
       case GT:
-        return GT;
+        return Expression.GT;
       default:
         throw new IllegalStateException();
     }
@@ -160,7 +166,7 @@ public final class Model2SugarTranslator {
       maxPena += v.getWeight() * v.getMax();
     }
     res.add(create(INT_DEFINITION, create("_P"), ZERO, create(maxPena)));
-    res.add(create(OBJECTIVE_DEFINITION, MINIMIZE, create("_P")));
+    res.add(create(Expression.OBJECTIVE_DEFINITION, Expression.MINIMIZE, create("_P")));
 
     Map<Integer, List<PenaltyVariable>> group = new HashMap<>();
     for (PenaltyVariable v : penaltyVariables) {
@@ -186,14 +192,14 @@ public final class Model2SugarTranslator {
         varExp.add(create(v.getName()));
       }
 
-      res.add(create(EQ, pena, create(ADD, varExp)));
+      res.add(create(Expression.EQ, pena, create(ADD, varExp)));
     }
 
     List<Expression> varExp = new ArrayList<>();
     for (int weight : group.keySet()) {
       varExp.add(create(MUL, create(weight), create(format("_P%03d", weight))));
     }
-    res.add(create(EQ, create("_P"), create(ADD, varExp)));
+    res.add(create(Expression.EQ, create("_P"), create(ADD, varExp)));
     return res;
   }
 
@@ -232,11 +238,14 @@ public final class Model2SugarTranslator {
       Expression mainName = varExp(variable);
       Expression subName = varExp(variable, value);
       ret.add(create(INT_DEFINITION, subName, ZERO, ONE));
-      ret.add(create(IMP, create(GE, subName, ONE), create(LE, mainName, create(value))));
-      ret.add(create(IMP, create(GE, subName, ONE), create(GE, mainName, create(value))));
-      ret.add(create(IMP,
-          create(AND, create(LE, mainName, create(value)), create(GE, mainName, create(value))),
-          create(GE, subName, ONE)));
+      ret.add(create(Expression.IMP, create(Expression.GE, subName, ONE),
+          create(Expression.LE, mainName, create(value))));
+      ret.add(create(Expression.IMP, create(Expression.GE, subName, ONE),
+          create(Expression.GE, mainName, create(value))));
+      ret.add(create(Expression.IMP,
+          create(Expression.AND, create(Expression.LE, mainName, create(value)),
+              create(Expression.GE, mainName, create(value))),
+          create(Expression.GE, subName, ONE)));
     }
 
     ret = Collections.unmodifiableList(ret);
@@ -309,7 +318,7 @@ public final class Model2SugarTranslator {
       if (constraint.getOp() == Comparator.EQ) {
         res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
         res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
-        res.add(create(EQ, pena, create(ADD, pena1, pena2)));
+        res.add(create(Expression.EQ, pena, create(ADD, pena1, pena2)));
       }
     }
 
@@ -386,7 +395,7 @@ public final class Model2SugarTranslator {
       if (constraint.getOp() == Comparator.EQ) {
         res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
         res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
-        res.add(create(EQ, pena, create(ADD, pena1, pena2)));
+        res.add(create(Expression.EQ, pena, create(ADD, pena1, pena2)));
       }
     }
 
@@ -411,7 +420,7 @@ public final class Model2SugarTranslator {
       vars.add(varExp(variable));
     }
 
-    Expression ret = create(ALLDIFFERENT, vars);
+    Expression ret = create(Expression.ALLDIFFERENT, vars);
     ret.setComment(constraint.getName());
     return Arrays.asList(ret);
   }
@@ -433,16 +442,16 @@ public final class Model2SugarTranslator {
       }
 
       if (term.isPositive()) {
-        terms.add(create(LE, varExp(term.getVariable(), term.getValue()), ZERO));
+        terms.add(create(Expression.LE, varExp(term.getVariable(), term.getValue()), ZERO));
       } else {
-        terms.add(create(GE, varExp(term.getVariable(), term.getValue()), ONE));
+        terms.add(create(Expression.GE, varExp(term.getVariable(), term.getValue()), ONE));
       }
     }
     if (constraint.isSoft()) {
-      terms.add(create(GE, penaltyVarExp(constraint), ONE));
+      terms.add(create(Expression.GE, penaltyVarExp(constraint), ONE));
     }
 
-    Expression cons = create(OR, terms);
+    Expression cons = create(Expression.OR, terms);
     cons.setComment(constraint.getName());
     res.add(cons);
     return res;
