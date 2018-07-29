@@ -43,6 +43,7 @@ public final class Model2SugarTranslator {
   private Set<String> constraintNameSpace;
 
   private List<PenaltyVariable> penaltyVariables;
+  private Map<Constraint, Expression> penaltyVariableMap;
 
   @Value
   private static class PenaltyVariable {
@@ -61,6 +62,7 @@ public final class Model2SugarTranslator {
     this.constraintNameSpace = new HashSet<>();
 
     this.penaltyVariables = new ArrayList<>();
+    this.penaltyVariableMap = new HashMap<>();
   }
 
   public static Model2SugarTranslator newInstance() {
@@ -195,6 +197,13 @@ public final class Model2SugarTranslator {
     return res;
   }
 
+  public Expression getPenaltyVariableOf(Constraint constraint) {
+    if (!penaltyVariableMap.containsKey(constraint)) {
+      throw new IllegalArgumentException("No Such Soft Constraint: " + constraint);
+    }
+    return penaltyVariableMap.get(constraint);
+  }
+
   public List<Expression> translate(@NonNull Variable variable) {
     if (variableMap.containsKey(variable)) {
       return variableMap.get(variable);
@@ -263,6 +272,7 @@ public final class Model2SugarTranslator {
         case EQ:
           maxPena1 = max(constraint.getRhs() - lhsMin, 0);
           maxPena2 = max(lhsMax - constraint.getRhs(), 0);
+          maxPena = max(maxPena1, maxPena2);
           lhsTerms.add(pena1);
           lhsTerms.add(pena2.neg());
           break;
@@ -291,19 +301,15 @@ public final class Model2SugarTranslator {
           throw new IllegalStateException();
       }
 
+      res.add(create(INT_DEFINITION, pena, ZERO, create(maxPena)));
+      penaltyVariables.add(
+          new PenaltyVariable(pena.stringValue(), maxPena, constraint.getWeight()));
+      penaltyVariableMap.put(constraint, pena);
+
       if (constraint.getOp() == Comparator.EQ) {
         res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
         res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
-
-        penaltyVariables.add(
-            new PenaltyVariable(pena1.stringValue(), maxPena1, constraint.getWeight()));
-        penaltyVariables.add(
-            new PenaltyVariable(pena2.stringValue(), maxPena2, constraint.getWeight()));
-      } else {
-        res.add(create(INT_DEFINITION, pena, ZERO, create(maxPena)));
-
-        penaltyVariables.add(
-            new PenaltyVariable(pena.stringValue(), maxPena, constraint.getWeight()));
+        res.add(create(EQ, pena, create(ADD, pena1, pena2)));
       }
     }
 
@@ -342,6 +348,7 @@ public final class Model2SugarTranslator {
         case EQ:
           maxPena1 = max(constraint.getRhs() - lhsMin, 0);
           maxPena2 = max(lhsMax - constraint.getRhs(), 0);
+          maxPena = max(maxPena1, maxPena2);
           lhsTerms.add(pena1);
           lhsTerms.add(pena2.neg());
           break;
@@ -370,19 +377,16 @@ public final class Model2SugarTranslator {
           throw new IllegalStateException();
       }
 
+      res.add(create(INT_DEFINITION, pena, ZERO, create(maxPena)));
+
+      penaltyVariables.add(
+          new PenaltyVariable(pena.stringValue(), maxPena, constraint.getWeight()));
+      penaltyVariableMap.put(constraint, pena);
+
       if (constraint.getOp() == Comparator.EQ) {
         res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
         res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
-
-        penaltyVariables.add(
-            new PenaltyVariable(pena1.stringValue(), maxPena1, constraint.getWeight()));
-        penaltyVariables.add(
-            new PenaltyVariable(pena2.stringValue(), maxPena2, constraint.getWeight()));
-      } else {
-        res.add(create(INT_DEFINITION, pena, ZERO, create(maxPena)));
-
-        penaltyVariables.add(
-            new PenaltyVariable(pena.stringValue(), maxPena, constraint.getWeight()));
+        res.add(create(EQ, pena, create(ADD, pena1, pena2)));
       }
     }
 
@@ -419,6 +423,7 @@ public final class Model2SugarTranslator {
       res.add(create(INT_DEFINITION, penaltyVarExp(constraint), ZERO, ONE));
       penaltyVariables.add(
           new PenaltyVariable(penaltyVarExp(constraint).stringValue(), 1, constraint.getWeight()));
+      penaltyVariableMap.put(constraint, penaltyVarExp(constraint));
     }
 
     List<Expression> terms = new ArrayList<>();
