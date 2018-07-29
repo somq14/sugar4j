@@ -88,7 +88,7 @@ public final class Sugar4jTest {
     sugar4j.addConstraint(create(Expression.OR, bv[0], bv[1], bv[2]));
     sugar4j.addConstraint(create(Expression.OR, bv[0].not(), bv[1].not()));
     sugar4j.addConstraint(create(Expression.OR, bv[1].not(), bv[2].not()));
-    sugar4j.addConstraint(create(Expression.OR, bv[1].not(), bv[0].not()));
+    sugar4j.addConstraint(create(Expression.OR, bv[2].not(), bv[0].not()));
     Solution solution = null;
 
     solution = sugar4j.solve();

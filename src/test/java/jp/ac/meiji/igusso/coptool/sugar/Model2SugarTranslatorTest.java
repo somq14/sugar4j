@@ -132,21 +132,21 @@ public final class Model2SugarTranslatorTest {
   }
 
   @Test
-  public void testSoftLinearConstraint2() {
+  public void testSoftLinearConstraint2() throws Exception {
     LinearConstraint cons = LinearConstraint.of("cons", Comparator.EQ, 8, 100)
                                 .addTerm(1, x[0])
                                 .addTerm(-2, x[1])
                                 .addTerm(3, x[2])
                                 .build();
     List<Expression> actual = translator.translate(cons);
-    List<Expression> expected =
-        Arrays.asList(create(INT_DEFINITION, create("_P1__cons"), create(0), create(10)),
-            create(INT_DEFINITION, create("_P2__cons"), create(0), create(2)),
-            create(EQ,
-                create(new Expression[] {ADD, create(MUL, create(1), create("x0")),
-                    create(MUL, create(-2), create("x1")), create(MUL, create(3), create("x2")),
-                    create("_P1__cons"), create(NEG, create("_P2__cons"))}),
-                create(8)));
+
+    List<Expression> expected = new Parser(
+        new BufferedReader(new StringReader("(int _P__cons 0 10)"
+            + "(int _P1__cons 0 10)"
+            + "(int _P2__cons 0 2)"
+            + "(eq _P__cons (add _P1__cons _P2__cons))"
+            + "(eq (add (mul 1 x0) (mul -2 x1) (mul 3 x2) _P1__cons (neg _P2__cons)) 8)")))
+                                    .parse();
     assertThat(actual, is(expected));
   }
 
