@@ -13,4 +13,6 @@ public interface Constraint extends Comparable<Constraint> {
   public boolean isHard();
 
   public boolean isSoft();
+
+  public int getPenaltyUpperBound();
 }

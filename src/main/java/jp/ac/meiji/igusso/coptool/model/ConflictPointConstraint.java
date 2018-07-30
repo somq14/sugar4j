@@ -30,6 +30,11 @@ public final class ConflictPointConstraint
   }
 
   @Override
+  public int getPenaltyUpperBound() {
+    return isHard() ? 0 : 1;
+  }
+
+  @Override
   public Iterator<PredicateTerm> iterator() {
     return terms.iterator();
   }

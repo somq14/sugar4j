@@ -34,6 +34,57 @@ public final class LinearConstraint extends AbstractConstraint implements Iterab
     return terms.get(index);
   }
 
+  public int getLhsUpperBound() {
+    int res = 0;
+    for (LinearTerm term : terms) {
+      int coeff = term.getCoeff();
+      Domain domain = term.getVariable().getDomain();
+      res += Math.max(coeff * domain.getLowerBound(), coeff * domain.getUpperBound());
+    }
+    return res;
+  }
+
+  public int getLhsLowerBound() {
+    int res = 0;
+    for (LinearTerm term : terms) {
+      int coeff = term.getCoeff();
+      Domain domain = term.getVariable().getDomain();
+      res += Math.min(coeff * domain.getLowerBound(), coeff * domain.getUpperBound());
+    }
+    return res;
+  }
+
+  @Override
+  public int getPenaltyUpperBound() {
+    if (isHard()) {
+      return 0;
+    }
+
+    int res = 0;
+    switch (op) {
+      case LE: {
+        res = Math.max(getLhsUpperBound() - rhs, 0);
+      } break;
+      case LT: {
+        res = Math.max(getLhsUpperBound() - rhs + 1, 0);
+      } break;
+      case GE: {
+        res = Math.max(rhs - getLhsLowerBound(), 0);
+      } break;
+      case GT: {
+        res = Math.max(rhs - getLhsLowerBound() + 1, 0);
+      } break;
+      case EQ: {
+        int pena1 = Math.max(getLhsUpperBound() - rhs, 0);
+        int pena2 = Math.max(rhs - getLhsLowerBound(), 0);
+        res = Math.max(pena1, pena2);
+      } break;
+      default:
+        throw new RuntimeException();
+    }
+    return res;
+  }
+
   @Override
   public Iterator<LinearTerm> iterator() {
     return terms.iterator();

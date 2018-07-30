@@ -35,6 +35,14 @@ public final class Domain implements Iterable<Integer> {
     return index < values.size() && values.get(index) == value;
   }
 
+  public int getLowerBound() {
+    return values.get(0);
+  }
+
+  public int getUpperBound() {
+    return values.get(values.size() - 1);
+  }
+
   @Override
   public Iterator<Integer> iterator() {
     return values.iterator();

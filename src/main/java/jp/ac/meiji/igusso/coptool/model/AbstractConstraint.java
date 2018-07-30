@@ -7,7 +7,7 @@ import lombok.ToString;
 
 @ToString
 @EqualsAndHashCode
-public class AbstractConstraint implements Constraint {
+public abstract class AbstractConstraint implements Constraint {
   @Getter private String name;
   @Getter private int weight;
 
@@ -20,10 +20,12 @@ public class AbstractConstraint implements Constraint {
     this.weight = Math.max(weight, -1);
   }
 
+  @Override
   public boolean isHard() {
     return weight < 0;
   }
 
+  @Override
   public boolean isSoft() {
     return weight >= 0;
   }

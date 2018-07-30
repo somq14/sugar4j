@@ -29,6 +29,11 @@ public final class AllDifferentConstraint extends AbstractConstraint implements 
   }
 
   @Override
+  public int getPenaltyUpperBound() {
+    return isHard() ? 0 : variables.size();
+  }
+
+  @Override
   public Iterator<Variable> iterator() {
     return variables.iterator();
   }
