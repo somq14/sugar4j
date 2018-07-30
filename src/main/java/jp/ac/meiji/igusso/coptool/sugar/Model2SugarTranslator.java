@@ -108,48 +108,6 @@ public final class Model2SugarTranslator {
     }
   }
 
-  private static int calcLhsMin(PseudoBooleanConstraint constraint) {
-    int lhsMin = 0;
-    for (PseudoBooleanTerm term : constraint) {
-      int coeff = term.getCoeff();
-      if (coeff < 0) {
-        lhsMin += coeff;
-      }
-    }
-    return lhsMin;
-  }
-
-  private static int calcLhsMin(LinearConstraint constraint) {
-    int lhsMin = 0;
-    for (LinearTerm term : constraint) {
-      int coeff = term.getCoeff();
-      List<Integer> domain = term.getVariable().getDomain().getValues();
-      lhsMin += Math.min(coeff * domain.get(0), coeff * domain.get(domain.size() - 1));
-    }
-    return lhsMin;
-  }
-
-  private static int calcLhsMax(PseudoBooleanConstraint constraint) {
-    int lhsMax = 0;
-    for (PseudoBooleanTerm term : constraint) {
-      int coeff = term.getCoeff();
-      if (coeff > 0) {
-        lhsMax += coeff;
-      }
-    }
-    return lhsMax;
-  }
-
-  private static int calcLhsMax(LinearConstraint constraint) {
-    int lhsMax = 0;
-    for (LinearTerm term : constraint) {
-      int coeff = term.getCoeff();
-      List<Integer> domain = term.getVariable().getDomain().getValues();
-      lhsMax += Math.max(coeff * domain.get(0), coeff * domain.get(domain.size() - 1));
-    }
-    return lhsMax;
-  }
-
   public boolean hasObjective() {
     return penaltyVariables.size() > 0;
   }
@@ -267,58 +225,37 @@ public final class Model2SugarTranslator {
     }
 
     if (constraint.isSoft()) {
-      int lhsMin = calcLhsMin(constraint);
-      int lhsMax = calcLhsMax(constraint);
-
       Expression pena = penaltyVarExp(constraint);
-      Expression pena1 = penaltyVarExp(constraint, 1);
-      Expression pena2 = penaltyVarExp(constraint, 2);
-
-      int maxPena = -1;
-      int maxPena1 = -1;
-      int maxPena2 = -1;
-      switch (constraint.getOp()) {
-        case EQ:
-          maxPena1 = max(constraint.getRhs() - lhsMin, 0);
-          maxPena2 = max(lhsMax - constraint.getRhs(), 0);
-          maxPena = max(maxPena1, maxPena2);
-          lhsTerms.add(pena1);
-          lhsTerms.add(pena2.neg());
-          break;
-
-        case LE:
-          maxPena = max(lhsMax - constraint.getRhs(), 0);
-          lhsTerms.add(pena.neg());
-          break;
-
-        case LT:
-          maxPena = max(lhsMax - constraint.getRhs() + 1, 0);
-          lhsTerms.add(pena.neg());
-          break;
-
-        case GE:
-          maxPena = max(constraint.getRhs() - lhsMin, 0);
-          lhsTerms.add(pena);
-          break;
-
-        case GT:
-          maxPena = max(constraint.getRhs() - lhsMin + 1, 0);
-          lhsTerms.add(pena);
-          break;
-
-        default:
-          throw new IllegalStateException();
-      }
-
+      int maxPena = constraint.getPenaltyUpperBound();
       res.add(create(INT_DEFINITION, pena, ZERO, create(maxPena)));
+
       penaltyVariables.add(
           new PenaltyVariable(pena.stringValue(), maxPena, constraint.getWeight()));
       penaltyVariableMap.put(constraint, pena);
 
-      if (constraint.getOp() == Comparator.EQ) {
-        res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
-        res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
-        res.add(create(Expression.EQ, pena, create(ADD, pena1, pena2)));
+      switch (constraint.getOp()) {
+        case EQ: {
+          int maxPena1 = max(constraint.getRhs() - constraint.getLhsLowerBound(), 0);
+          int maxPena2 = max(constraint.getLhsUpperBound() - constraint.getRhs(), 0);
+          Expression pena1 = penaltyVarExp(constraint, 1);
+          Expression pena2 = penaltyVarExp(constraint, 2);
+          res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
+          res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
+          res.add(create(Expression.EQ, pena, create(ADD, pena1, pena2)));
+
+          lhsTerms.add(pena1);
+          lhsTerms.add(pena2.neg());
+        } break;
+        case LE:
+        case LT: {
+          lhsTerms.add(pena.neg());
+        } break;
+        case GE:
+        case GT: {
+          lhsTerms.add(pena);
+        } break;
+        default:
+          throw new IllegalStateException();
       }
     }
 
@@ -343,59 +280,40 @@ public final class Model2SugarTranslator {
     }
 
     if (constraint.isSoft()) {
-      int lhsMin = calcLhsMin(constraint);
-      int lhsMax = calcLhsMax(constraint);
-
       Expression pena = penaltyVarExp(constraint);
-      Expression pena1 = penaltyVarExp(constraint, 1);
-      Expression pena2 = penaltyVarExp(constraint, 2);
-
-      int maxPena = -1;
-      int maxPena1 = -1;
-      int maxPena2 = -1;
-      switch (constraint.getOp()) {
-        case EQ:
-          maxPena1 = max(constraint.getRhs() - lhsMin, 0);
-          maxPena2 = max(lhsMax - constraint.getRhs(), 0);
-          maxPena = max(maxPena1, maxPena2);
-          lhsTerms.add(pena1);
-          lhsTerms.add(pena2.neg());
-          break;
-
-        case LE:
-          maxPena = max(lhsMax - constraint.getRhs(), 0);
-          lhsTerms.add(pena.neg());
-          break;
-
-        case LT:
-          maxPena = max(lhsMax - constraint.getRhs() + 1, 0);
-          lhsTerms.add(pena.neg());
-          break;
-
-        case GE:
-          maxPena = max(constraint.getRhs() - lhsMin, 0);
-          lhsTerms.add(pena);
-          break;
-
-        case GT:
-          maxPena = max(constraint.getRhs() - lhsMin + 1, 0);
-          lhsTerms.add(pena);
-          break;
-
-        default:
-          throw new IllegalStateException();
-      }
-
+      int maxPena = constraint.getPenaltyUpperBound();
       res.add(create(INT_DEFINITION, pena, ZERO, create(maxPena)));
 
       penaltyVariables.add(
           new PenaltyVariable(pena.stringValue(), maxPena, constraint.getWeight()));
       penaltyVariableMap.put(constraint, pena);
 
-      if (constraint.getOp() == Comparator.EQ) {
-        res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
-        res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
-        res.add(create(Expression.EQ, pena, create(ADD, pena1, pena2)));
+      switch (constraint.getOp()) {
+        case EQ: {
+          int maxPena1 = max(constraint.getRhs() - constraint.getLhsLowerBound(), 0);
+          int maxPena2 = max(constraint.getLhsUpperBound() - constraint.getRhs(), 0);
+          Expression pena1 = penaltyVarExp(constraint, 1);
+          Expression pena2 = penaltyVarExp(constraint, 2);
+          res.add(create(INT_DEFINITION, pena1, ZERO, create(maxPena1)));
+          res.add(create(INT_DEFINITION, pena2, ZERO, create(maxPena2)));
+          res.add(create(Expression.EQ, pena, create(ADD, pena1, pena2)));
+
+          lhsTerms.add(pena1);
+          lhsTerms.add(pena2.neg());
+        } break;
+
+        case LE:
+        case LT: {
+          lhsTerms.add(pena.neg());
+        } break;
+
+        case GE:
+        case GT: {
+          lhsTerms.add(pena);
+        } break;
+
+        default:
+          throw new IllegalStateException();
       }
     }
 
