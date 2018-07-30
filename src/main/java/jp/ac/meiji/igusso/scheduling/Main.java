@@ -12,9 +12,9 @@ import jp.ac.meiji.igusso.coptool.sugar.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;
 
 import java.io.FileReader;
-import java.nio.file.Paths;
-import java.nio.file.Files;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 public final class Main {
@@ -41,27 +41,25 @@ public final class Main {
     }
     log("Done");
 
-    log("");
     log("Searching");
     scop4j.setTimeout(3600);
-    jp.ac.meiji.igusso.coptool.scop.Solution solution = scop4j.solve();
+    final jp.ac.meiji.igusso.coptool.scop.Solution solution = scop4j.solve();
     log("Done");
-
     log("");
+
     log("Scop Log");
     List<String> logBody = Files.readAllLines(scop4j.getLogFile(), Charset.defaultCharset());
     for (String line : logBody) {
       log(line);
     }
-
     log("");
-    log("Solution");
 
     if (solution.getHardPenalty() > 0) {
       log("Found No Feasible Solution");
       return;
     }
 
+    log("Solution");
     for (Variable variable : model.getVariables()) {
       log("%s = %s", variable.getName(),
           solution.getSolution().get(translator.translate(variable)));
