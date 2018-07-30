@@ -1,6 +1,7 @@
 package jp.ac.meiji.igusso.scheduling;
 
 import static jp.ac.meiji.igusso.scheduling.Main.log;
+import static jp.kobe_u.sugar.expression.Expression.create;
 
 import jp.ac.meiji.igusso.coptool.model.Constraint;
 import jp.ac.meiji.igusso.coptool.model.Model;
@@ -69,7 +70,16 @@ final class IncrementalMethod {
       sugar4j.addConstraints(translator.translate(constraint));
     }
 
-    sugar4j.addConstraints(translator.translateObjective());
+    // generate objective variable _P
+    int maxPenaltyOfHeavyConstraints = 0;
+    List<Expression> terms = new ArrayList<>();
+    for (Constraint constraint : heavyConstraints) {
+      terms.add(translator.getPenaltyVariableOf(constraint));
+      maxPenaltyOfHeavyConstraints += constraint.getPenaltyUpperBound();
+    }
+    sugar4j.addIntVariable("_P", 0, maxPenaltyOfHeavyConstraints);
+    sugar4j.addConstraint(create(Expression.EQ, create("_P"), create(Expression.ADD, terms)));
+
     log("Done");
 
     log("Encoding Constraints...");
@@ -110,7 +120,7 @@ final class IncrementalMethod {
     }
     log("Optimum Found About Heavy Constraint Penalty = %d", penalty);
 
-    Expression objBind = Expression.create(Expression.EQ, obj, Expression.create(penalty));
+    Expression objBind = create(Expression.EQ, obj, create(penalty));
     log("Add Constraint To Bind %s", objBind.toString());
     sugar4j.addConstraint(objBind);
     log("Done");
@@ -159,7 +169,7 @@ final class IncrementalMethod {
       log("Complete To Improve Penalty = %d", penalty);
 
       Expression penaltyBind =
-          Expression.create(Expression.EQ, penaltyVariable, Expression.create(penalty));
+          create(Expression.EQ, penaltyVariable, create(penalty));
       log("Add Constraint To Bind %s", penaltyBind.toString());
       sugar4j.addConstraint(penaltyBind);
       log("Done", penaltyBind.toString());
@@ -172,7 +182,7 @@ final class IncrementalMethod {
     log("Solution");
     for (Variable variable : model.getVariables()) {
       log("%s = %d", variable.getName(),
-          bestSolution.getIntMap().get(Expression.create(variable.getName())));
+          bestSolution.getIntMap().get(create(variable.getName())));
     }
     log("");
     log("Penalty (weight)");
