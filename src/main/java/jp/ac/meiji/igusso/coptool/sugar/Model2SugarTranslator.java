@@ -411,17 +411,29 @@ public final class Model2SugarTranslator {
     String newLine = String.format("%n");
     for (List<Expression> expressions : variableMap.values()) {
       for (Expression expression : expressions) {
-        ret.append(expression).append(newLine);
+        ret.append(expression);
+        if (expression.getComment() != null) {
+          ret.append(" ; ").append(expression.getComment());
+        }
+        ret.append(newLine);
       }
     }
     for (List<Expression> expressions : constraintMap.values()) {
       for (Expression expression : expressions) {
-        ret.append(expression).append(newLine);
+        ret.append(expression);
+        if (expression.getComment() != null) {
+          ret.append(" ; ").append(expression.getComment());
+        }
+        ret.append(newLine);
       }
     }
     if (hasObjective()) {
       for (Expression expression : translateObjective()) {
-        ret.append(expression).append(newLine);
+        ret.append(expression);
+        if (expression.getComment() != null) {
+          ret.append(" ; ").append(expression.getComment());
+        }
+        ret.append(newLine);
       }
     }
     return ret.toString();
