@@ -29,10 +29,12 @@ public final class IpasirSolver implements SatSolver {
     return new IpasirSolver(solverName);
   }
 
+  @Override
   public String getName() {
     return ipasir.ipasir_signature();
   }
 
+  @Override
   public void add(@NonNull int... clause) {
     for (int literal : clause) {
       if (literal == 0) {
@@ -45,6 +47,7 @@ public final class IpasirSolver implements SatSolver {
     ipasir.ipasir_add(solver, 0);
   }
 
+  @Override
   public void add(@NonNull Collection<Integer> clause) {
     for (int literal : clause) {
       if (literal == 0) {
@@ -57,6 +60,7 @@ public final class IpasirSolver implements SatSolver {
     ipasir.ipasir_add(solver, 0);
   }
 
+  @Override
   public void assume(int literal) {
     if (literal == 0) {
       throw new IllegalArgumentException("Literal Must Not Be Zero");
@@ -64,6 +68,7 @@ public final class IpasirSolver implements SatSolver {
     ipasir.ipasir_assume(solver, literal);
   }
 
+  @Override
   public List<Integer> solve() {
     List<Integer> res = new ArrayList<>();
     res.add(ipasir.ipasir_solve(solver));
@@ -77,10 +82,39 @@ public final class IpasirSolver implements SatSolver {
     return res;
   }
 
+  private static class TimeoutCallback implements IpasirLibrary.IpasirCallback {
+    private final long period;
+    private final long beginTime;
+
+    TimeoutCallback(long period) {
+      this.period = period;
+      this.beginTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public int callback(Pointer state) {
+      long currTime = System.currentTimeMillis();
+      return (currTime - beginTime) >= period * 1000L ? 1 : 0;
+    }
+  }
+
+  @Override
+  public List<Integer> solve(long timeout) {
+    if (timeout <= 0) {
+      return solve();
+    }
+
+    ipasir.ipasir_set_terminate(solver, null, new TimeoutCallback(timeout));
+    List<Integer> res = solve();
+    ipasir.ipasir_set_terminate(solver, null, null);
+    return res;
+  }
+
   @Override
   public void close() {
     if (ipasir != null) {
       ipasir.ipasir_release(solver);
+      ipasir.ipasir_set_terminate(solver, null, null);
     }
     ipasir = null;
     solver = null;

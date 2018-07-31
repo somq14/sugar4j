@@ -9,6 +9,7 @@ import static org.hamcrest.CoreMatchers.*;
 
 import java.util.List;
 import java.util.Arrays;
+import java.util.Random;
 
 public class IpasirSolverTest {
   SatSolver solver;
@@ -120,5 +121,22 @@ public class IpasirSolverTest {
     actual = solver.solve().get(0);
     expected = SatSolver.UNSAT;
     assertThat(actual, is(expected));
+  }
+
+  // @Test
+  // this is so time consuming
+  public void testTimeout() {
+    Random rand = new Random();
+
+    int n = 1000 * 1000;
+    int[] clause = new int[10];
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < clause.length; j++) {
+        int lit = rand.nextInt(1000) + 1;
+        clause[j] = rand.nextBoolean() ? lit : -lit;
+      }
+      solver.add(clause);
+    }
+    assertThat(solver.solve(1).get(0), is(SatSolver.INTERRUPTED));
   }
 }

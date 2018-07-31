@@ -116,6 +116,8 @@ public interface IpasirLibrary extends Library {
    * State after: INPUT or SAT or UNSAT
    */
   public void ipasir_set_terminate(Pointer solver, Pointer state, Callback terminate);
+
+  public interface IpasirCallback extends Callback { public int callback(Pointer state); }
 }
 // Java CHECKSTYLE:ON JavadocParagraph
 // Java CHECKSTYLE:ON ParameterName
