@@ -15,9 +15,9 @@ import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 
 public final class Main {
@@ -352,8 +352,8 @@ public final class Main {
       }
       int prevVariablesCount2 = sugar4j2.getSatVariablesCount();
       int prevClausesCount2 = sugar4j2.getSatClausesCount();
-      sugar4j2.addConstraint(Expression.create(
-          Expression.INT_DEFINITION, Expression.create("_P"), Expression.ZERO, Expression.create(penaltySum)));
+      sugar4j2.addConstraint(Expression.create(Expression.INT_DEFINITION, Expression.create("_P"),
+          Expression.ZERO, Expression.create(penaltySum)));
       sugar4j2.addConstraint(Expression.create(
           Expression.EQ, Expression.create("_P"), Expression.create(Expression.ADD, terms)));
       System.out.println(String.format("; %20s, %6d, %6d", "heavyObj",
