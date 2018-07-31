@@ -35,4 +35,6 @@ public interface Sugar4j extends Closeable {
   public void update() throws SugarException;
 
   public Solution solve() throws SugarException;
+
+  public Solution solve(long timeout) throws SugarException;
 }

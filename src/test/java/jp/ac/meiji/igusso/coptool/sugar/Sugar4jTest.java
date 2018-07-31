@@ -11,9 +11,12 @@ import org.junit.After;
 import jp.kobe_u.sugar.expression.Expression;
 import jp.ac.meiji.igusso.coptool.sat.IpasirSolver;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public final class Sugar4jTest {
   Sugar4j sugar4j;
@@ -252,5 +255,31 @@ public final class Sugar4jTest {
       }
     }
     assertThat(actual, is(expected));
+  }
+
+  // @Test
+  public void testTimeout() throws Exception {
+    Random rand = new Random();
+
+    Expression[] v = new Expression[1000];
+    for (int i = 0; i < v.length; i++) {
+      v[i] = sugar4j.addBoolVariable("v" + i);
+    }
+
+    List<Expression> terms = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
+      terms.add(null);
+    }
+
+    int n = 1000 * 1000;
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < terms.size(); j++) {
+        int lit = rand.nextInt(v.length);
+        terms.set(j, rand.nextBoolean() ? v[lit]: v[lit].not());
+      }
+      sugar4j.addConstraint(create(Expression.OR, terms));
+    }
+
+    assertThat(sugar4j.solve(1).isTimeout(), is(true));
   }
 }

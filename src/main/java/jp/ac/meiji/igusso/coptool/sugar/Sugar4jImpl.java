@@ -193,11 +193,14 @@ final class Sugar4jImpl implements Sugar4j {
   @EqualsAndHashCode
   private static class SolutionImpl implements Solution {
     @Getter private final boolean sat;
+    @Getter private final boolean timeout;
     @Getter private final Map<Expression, Boolean> boolMap;
     @Getter private final Map<Expression, Integer> intMap;
 
-    SolutionImpl(boolean sat, Map<Expression, Boolean> boolMap, Map<Expression, Integer> intMap) {
+    SolutionImpl(boolean sat, boolean timeout, Map<Expression, Boolean> boolMap,
+        Map<Expression, Integer> intMap) {
       this.sat = sat;
+      this.timeout = timeout;
       this.boolMap = Collections.unmodifiableMap(boolMap);
       this.intMap = Collections.unmodifiableMap(intMap);
     }
@@ -220,14 +223,21 @@ final class Sugar4jImpl implements Sugar4j {
     }
   }
 
-
   @Override
   public Solution solve() throws SugarException {
+    return solve(-1);
+  }
+
+  @Override
+  public Solution solve(long timeout) throws SugarException {
     update();
 
-    List<Integer> solution = solver.solve();
+    List<Integer> solution = solver.solve(timeout);
     if (solution.get(0) == SatSolver.UNSAT) {
-      return new SolutionImpl(false, new HashMap<>(), new HashMap<>());
+      return new SolutionImpl(false, false, new HashMap<>(), new HashMap<>());
+    }
+    if (solution.get(0) == SatSolver.INTERRUPTED) {
+      return new SolutionImpl(false, true, new HashMap<>(), new HashMap<>());
     }
 
     Map<Expression, Integer> intMap = new HashMap<>();
@@ -263,7 +273,7 @@ final class Sugar4jImpl implements Sugar4j {
       boolMap.put(create(variable.getName()), solution.get(variable.getCode()) > 0);
     }
 
-    return new SolutionImpl(true, boolMap, intMap);
+    return new SolutionImpl(true, false, boolMap, intMap);
   }
 
   @Override
