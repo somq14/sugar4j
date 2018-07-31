@@ -17,6 +17,7 @@ import jp.ac.meiji.igusso.coptool.model.Variable;
 import lombok.NonNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -245,6 +246,10 @@ public final class SchedulingProblemEncoder {
 
     for (int i : I) {
       for (int t = 1; t < T.length; t++) {
+        if (M_MAX[i][t] == H) {
+          return Arrays.asList();
+        }
+
         String consName = format("C03_i%02d_t%02d", i, t);
         PseudoBooleanConstraint.Builder cons =
             PseudoBooleanConstraint.of(consName, Comparator.LE, M_MAX[i][t]);
