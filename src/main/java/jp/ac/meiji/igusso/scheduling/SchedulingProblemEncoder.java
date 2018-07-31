@@ -247,7 +247,7 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int t = 1; t < T.length; t++) {
         if (M_MAX[i][t] == H) {
-          return Arrays.asList();
+          continue;
         }
 
         String consName = format("C03_i%02d_t%02d", i, t);
