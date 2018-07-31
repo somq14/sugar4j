@@ -37,4 +37,8 @@ public interface Sugar4j extends Closeable {
   public Solution solve() throws SugarException;
 
   public Solution solve(long timeout) throws SugarException;
+
+  public int getSatClausesCount() throws SugarException;
+
+  public int getSatVariablesCount() throws SugarException;
 }

@@ -280,4 +280,16 @@ final class Sugar4jImpl implements Sugar4j {
   public void close() {
     solver.close();
   }
+
+  @Override
+  public int getSatClausesCount() throws SugarException {
+    update();
+    return encoder.getSatClausesCount();
+  }
+
+  @Override
+  public int getSatVariablesCount() throws SugarException {
+    update();
+    return encoder.getSatVariablesCount();
+  }
 }

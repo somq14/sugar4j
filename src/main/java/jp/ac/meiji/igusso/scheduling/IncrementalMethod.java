@@ -21,6 +21,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 final class IncrementalMethod {
+
+  IncrementalMethod(Map<String, String> options) {
+  }
+
   void solve(SchedulingProblem problem) throws Exception {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
     Model model = spe.encode();

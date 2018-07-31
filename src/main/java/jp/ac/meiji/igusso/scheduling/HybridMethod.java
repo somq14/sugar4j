@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Map;
 
 final class HybridMethod {
+
+  HybridMethod(Map<String, String> options) {
+  }
+
   void solve(SchedulingProblem problem) throws Exception {
     final long timerBegin = System.currentTimeMillis();
 

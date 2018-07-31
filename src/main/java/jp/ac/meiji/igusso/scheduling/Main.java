@@ -15,7 +15,9 @@ import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class Main {
   static void log(String format, Object... objs) {
@@ -23,10 +25,26 @@ public final class Main {
   }
 
   private static void usage() {
-    log("Main InstanceFile [scop|linear|binary|incremental|hybrid]");
+    log("Main File Method Options...");
+    log("  File    : path to instance file (required)");
+    log("  Method  : scop|linear|binary|incremental|hybrid|encode (required)");
+    log("  Options : parameters for algorithms");
   }
 
-  private static void solveWithScop(SchedulingProblem problem) throws Exception {
+  private static Map<String, String> parseOptions(String[] args) {
+    Map<String, String> map = new HashMap<>();
+    for (int i = 2; i < args.length; i++) {
+      if (!args[i].matches("\\w+=\\w+")) {
+        throw new IllegalArgumentException("name=value");
+      }
+      String[] values = args[i].split("=");
+      map.put(values[0], values[1]);
+    }
+    return map;
+  }
+
+  private static void solveWithScop(SchedulingProblem problem, Map<String, String> options)
+      throws Exception {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
     Model model = spe.encode();
 
@@ -70,7 +88,8 @@ public final class Main {
     log("Done");
   }
 
-  private static void solveWithSugarLinear(SchedulingProblem problem) throws Exception {
+  private static void solveWithSugarLinear(SchedulingProblem problem, Map<String, String> options)
+      throws Exception {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
     Model model = spe.encode();
 
@@ -145,7 +164,8 @@ public final class Main {
     log("Cpu Time = %d [ms]", (timerEnd - timerBegin));
   }
 
-  private static void solveWithSugarBinary(SchedulingProblem problem) throws Exception {
+  private static void solveWithSugarBinary(SchedulingProblem problem, Map<String, String> options)
+      throws Exception {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
     Model model = spe.encode();
 
@@ -227,37 +247,83 @@ public final class Main {
     log("Cpu Time = %d [ms]", (timerEnd - timerBegin));
   }
 
-  private static void solveByIncrementalMethod(SchedulingProblem problem) throws Exception {
-    new IncrementalMethod().solve(problem);
+  private static void solveByIncrementalMethod(
+      SchedulingProblem problem, Map<String, String> options) throws Exception {
+    new IncrementalMethod(options).solve(problem);
   }
 
-  public static void solveByHybridMethod(SchedulingProblem problem) throws Exception {
-    new HybridMethod().solve(problem);
+  public static void solveByHybridMethod(SchedulingProblem problem, Map<String, String> options)
+      throws Exception {
+    new HybridMethod(options).solve(problem);
+  }
+
+  public static void encodeSugar(SchedulingProblem problem, Map<String, String> options)
+      throws Exception {
+    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
+    Model model = spe.encode();
+
+    Model2SugarTranslator translator = Model2SugarTranslator.newInstance();
+    Sugar4j sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
+
+    for (Variable variable : model.getVariables()) {
+      sugar4j.addExpressions(translator.translate(variable));
+    }
+    System.out.println(String.format("; %20s, %6d, %6d", "base", sugar4j.getSatVariablesCount(),
+        sugar4j.getSatClausesCount()));
+
+    for (Constraint constraint : model.getConstraints()) {
+      int prevVariablesCount = sugar4j.getSatVariablesCount();
+      int prevClausesCount = sugar4j.getSatClausesCount();
+      sugar4j.addConstraints(translator.translate(constraint));
+      System.out.println(String.format("; %20s, %6d, %6d", constraint.getName(),
+          sugar4j.getSatVariablesCount() - prevVariablesCount,
+          sugar4j.getSatClausesCount() - prevClausesCount));
+    }
+
+    int prevVariablesCount = sugar4j.getSatVariablesCount();
+    int prevClausesCount = sugar4j.getSatClausesCount();
+    sugar4j.addConstraints(translator.translateObjective());
+    System.out.println(String.format("; %20s, %6d, %6d", "obj",
+        sugar4j.getSatVariablesCount() - prevVariablesCount,
+        sugar4j.getSatClausesCount() - prevClausesCount));
+
+    System.out.println(String.format("; %20s, %6d, %6d", "total", sugar4j.getSatVariablesCount(),
+        sugar4j.getSatClausesCount()));
+    System.out.println(translator);
   }
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 2) {
+    if (args.length < 2) {
       usage();
       System.exit(1);
     }
-    jp.kobe_u.sugar.converter.Converter.INCREMENTAL_PROPAGATION = false;
+    Map<String, String> options = parseOptions(args);
 
     String fileName = args[0];
     SchedulingProblemParser spp = new SchedulingProblemParser(new FileReader(fileName));
     SchedulingProblem sp = spp.parse();
 
-    if ("scop".equals(args[1])) {
-      solveWithScop(sp);
-    } else if ("binary".equals(args[1])) {
-      solveWithSugarBinary(sp);
-    } else if ("linear".equals(args[1])) {
-      solveWithSugarLinear(sp);
-    } else if ("incremental".equals(args[1])) {
-      solveByIncrementalMethod(sp);
-    } else if ("hybrid".equals(args[1])) {
-      solveByHybridMethod(sp);
-    } else {
-      usage();
+    switch (args[1]) {
+      case "scop": {
+        solveWithScop(sp, options);
+      } break;
+      case "linear": {
+        solveWithSugarLinear(sp, options);
+      } break;
+      case "binary": {
+        solveWithSugarBinary(sp, options);
+      } break;
+      case "incremental": {
+        solveByIncrementalMethod(sp, options);
+      } break;
+      case "hybrid": {
+        solveByHybridMethod(sp, options);
+      } break;
+      case "encode": {
+        encodeSugar(sp, options);
+      } break;
+      default:
+        usage();
     }
   }
 }
