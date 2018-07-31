@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 
 public final class Main {
@@ -268,17 +269,29 @@ public final class Main {
     for (Variable variable : model.getVariables()) {
       sugar4j.addExpressions(translator.translate(variable));
     }
-    System.out.println(String.format("; %20s, %6d, %6d", "base", sugar4j.getSatVariablesCount(),
-        sugar4j.getSatClausesCount()));
+    System.out.println(String.format(
+        "; %20s, %6d, %6d", "base", sugar4j.getSatVariablesCount(), sugar4j.getSatClausesCount()));
 
     for (Constraint constraint : model.getConstraints()) {
       int prevVariablesCount = sugar4j.getSatVariablesCount();
       int prevClausesCount = sugar4j.getSatClausesCount();
       sugar4j.addConstraints(translator.translate(constraint));
-      System.out.println(String.format("; %20s, %6d, %6d", constraint.getName(),
-          sugar4j.getSatVariablesCount() - prevVariablesCount,
-          sugar4j.getSatClausesCount() - prevClausesCount));
+      if (constraint.isHard()) {
+        System.out.println(String.format("; %20s, %6d, %6d", constraint.getName(),
+            sugar4j.getSatVariablesCount() - prevVariablesCount,
+            sugar4j.getSatClausesCount() - prevClausesCount));
+      } else {
+        System.out.println(String.format("; %20s, %6d, %6d, %3d, %3d", constraint.getName(),
+            sugar4j.getSatVariablesCount() - prevVariablesCount,
+            sugar4j.getSatClausesCount() - prevClausesCount, constraint.getWeight(),
+            constraint.getPenaltyUpperBound()));
+      }
     }
+
+    System.out.println(
+        String.format("; ----------------------------------------------------------------"));
+    System.out.println(String.format("; %20s, %6d, %6d", "constraints",
+        sugar4j.getSatVariablesCount(), sugar4j.getSatClausesCount()));
 
     int prevVariablesCount = sugar4j.getSatVariablesCount();
     int prevClausesCount = sugar4j.getSatClausesCount();
@@ -287,8 +300,70 @@ public final class Main {
         sugar4j.getSatVariablesCount() - prevVariablesCount,
         sugar4j.getSatClausesCount() - prevClausesCount));
 
-    System.out.println(String.format("; %20s, %6d, %6d", "total", sugar4j.getSatVariablesCount(),
-        sugar4j.getSatClausesCount()));
+    //
+    {
+      Model2SugarTranslator translator2 = Model2SugarTranslator.newInstance();
+      Sugar4j sugar4j2 = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
+      for (Variable variable : model.getVariables()) {
+        sugar4j2.addExpressions(translator2.translate(variable));
+      }
+      int maxWeight = 0;
+      for (Constraint constraint : model.getConstraints()) {
+        if (constraint.isSoft()) {
+          maxWeight = Math.max(maxWeight, constraint.getWeight());
+        }
+      }
+      for (Constraint constraint : model.getConstraints()) {
+        if (constraint.isHard() || constraint.getWeight() != maxWeight) {
+          sugar4j2.addConstraints(translator2.translate(constraint));
+        }
+      }
+      int prevVariablesCount2 = sugar4j2.getSatVariablesCount();
+      int prevClausesCount2 = sugar4j2.getSatClausesCount();
+      sugar4j2.addConstraints(translator2.translateObjective());
+      System.out.println(String.format("; %20s, %6d, %6d", "lightObj",
+          sugar4j2.getSatVariablesCount() - prevVariablesCount2,
+          sugar4j2.getSatClausesCount() - prevClausesCount2));
+    }
+
+    //
+    {
+      Model2SugarTranslator translator2 = Model2SugarTranslator.newInstance();
+      Sugar4j sugar4j2 = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
+      for (Variable variable : model.getVariables()) {
+        sugar4j2.addExpressions(translator2.translate(variable));
+      }
+      int maxWeight = 0;
+      for (Constraint constraint : model.getConstraints()) {
+        if (constraint.isSoft()) {
+          maxWeight = Math.max(maxWeight, constraint.getWeight());
+        }
+      }
+      for (Constraint constraint : model.getConstraints()) {
+        sugar4j2.addConstraints(translator2.translate(constraint));
+      }
+      List<Expression> terms = new ArrayList<>();
+      int penaltySum = 0;
+      for (Constraint constraint : model.getConstraints()) {
+        if (constraint.getWeight() == maxWeight) {
+          terms.add(translator2.getPenaltyVariableOf(constraint));
+          penaltySum += constraint.getPenaltyUpperBound();
+        }
+      }
+      int prevVariablesCount2 = sugar4j2.getSatVariablesCount();
+      int prevClausesCount2 = sugar4j2.getSatClausesCount();
+      sugar4j2.addConstraint(Expression.create(
+          Expression.INT_DEFINITION, Expression.create("_P"), Expression.ZERO, Expression.create(penaltySum)));
+      sugar4j2.addConstraint(Expression.create(
+          Expression.EQ, Expression.create("_P"), Expression.create(Expression.ADD, terms)));
+      System.out.println(String.format("; %20s, %6d, %6d", "heavyObj",
+          sugar4j2.getSatVariablesCount() - prevVariablesCount2,
+          sugar4j2.getSatClausesCount() - prevClausesCount2));
+    }
+
+    System.out.println(String.format(
+        "; %20s, %6d, %6d", "total", sugar4j.getSatVariablesCount(), sugar4j.getSatClausesCount()));
+
     System.out.println(translator);
   }
 
