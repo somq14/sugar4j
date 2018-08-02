@@ -89,175 +89,6 @@ public final class Main {
     log("Done");
   }
 
-  private static void solveWithSugarLinear(SchedulingProblem problem, Map<String, String> options)
-      throws Exception {
-    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    Model model = spe.encode();
-
-    Model2SugarTranslator translator = Model2SugarTranslator.newInstance();
-    Sugar4j sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
-
-    log("Translating Model...");
-    for (Variable variable : model.getVariables()) {
-      sugar4j.addExpressions(translator.translate(variable));
-    }
-    for (Constraint constraint : model.getConstraints()) {
-      sugar4j.addConstraints(translator.translate(constraint));
-    }
-    sugar4j.addConstraints(translator.translateObjective());
-    log("Done");
-
-    log("Encoding Constraints...");
-    sugar4j.update();
-    log("Done");
-
-    log("Searching Initial Solution...");
-    int solveCount = 0;
-    final long timerBegin = System.currentTimeMillis();
-    jp.ac.meiji.igusso.coptool.sugar.Solution solution = sugar4j.solve();
-    jp.ac.meiji.igusso.coptool.sugar.Solution bestSolution = null;
-    solveCount++;
-    if (!solution.isSat()) {
-      log("UNSAT (There Is No Feasible Solution)");
-      return;
-    }
-    bestSolution = solution;
-
-    Expression obj = Expression.create("_P");
-    int ans = solution.getIntMap().get(obj);
-    log("Found OBJ = %d", ans);
-
-    while (true) {
-      log("Search OBJ <= %d", ans - 1);
-
-      sugar4j.addAssumption(obj, Comparator.LE, ans - 1);
-      solution = sugar4j.solve();
-      solveCount++;
-
-      if (!solution.isSat()) {
-        log("Not Found");
-        break;
-      }
-      ans = solution.getIntMap().get(obj);
-      log("Found OBJ = %d", ans);
-      bestSolution = solution;
-    }
-    final long timerEnd = System.currentTimeMillis();
-
-    log("");
-    log("Solution");
-    for (Variable variable : model.getVariables()) {
-      log("%s = %d", variable.getName(),
-          bestSolution.getIntMap().get(Expression.create(variable.getName())));
-    }
-    log("");
-    log("Penalty (weight)");
-    for (Constraint constraint : model.getConstraints()) {
-      if (constraint.isHard()) {
-        continue;
-      }
-      log("%s (%d) = %d", constraint.getName(), constraint.getWeight(),
-          bestSolution.getIntMap().get(translator.getPenaltyVariableOf(constraint)));
-    }
-    log("");
-    log("Optimum Found OBJ = %d", ans);
-    log("Solve Count = %d", solveCount);
-    log("Cpu Time = %d [ms]", (timerEnd - timerBegin));
-  }
-
-  private static void solveWithSugarBinary(SchedulingProblem problem, Map<String, String> options)
-      throws Exception {
-    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    Model model = spe.encode();
-
-    Model2SugarTranslator translator = Model2SugarTranslator.newInstance();
-    Sugar4j sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
-
-    log("Translating Model...");
-    for (Variable variable : model.getVariables()) {
-      sugar4j.addExpressions(translator.translate(variable));
-    }
-    for (Constraint constraint : model.getConstraints()) {
-      sugar4j.addConstraints(translator.translate(constraint));
-    }
-    sugar4j.addConstraints(translator.translateObjective());
-    log("Done");
-
-    log("Encoding Constraints...");
-    sugar4j.update();
-    log("Done");
-
-    log("Seaching Initial Solution");
-    int solveCount = 0;
-    final long timerBegin = System.currentTimeMillis();
-    jp.ac.meiji.igusso.coptool.sugar.Solution solution = sugar4j.solve();
-    jp.ac.meiji.igusso.coptool.sugar.Solution bestSolution = null;
-    solveCount++;
-    if (!solution.isSat()) {
-      log("UNSAT (There Is No Feasible Solution)");
-      return;
-    }
-    bestSolution = solution;
-
-    Expression obj = Expression.create("_P");
-    log("Found OBJ = %d", solution.getIntMap().get(obj));
-
-    // (lb, ub]
-    int lb = -1;
-    int ub = solution.getIntMap().get(obj);
-    while (ub - lb > 1) {
-      log("Bound %d <= OBJ <= %d", lb + 1, ub);
-
-      int mid = lb + (ub - lb) / 2;
-      sugar4j.addAssumption(obj, Comparator.LE, mid);
-
-      log("Searching OBJ <= %d", mid);
-      solution = sugar4j.solve();
-      solveCount++;
-
-      if (solution.isSat()) {
-        ub = solution.getIntMap().get(obj);
-        log("Found OBJ = %d", ub);
-        bestSolution = solution;
-      } else {
-        lb = mid;
-        log("Not Found");
-      }
-    }
-
-    final long timerEnd = System.currentTimeMillis();
-
-    log("");
-    log("Solution");
-    for (Variable variable : model.getVariables()) {
-      log("%s = %d", variable.getName(),
-          bestSolution.getIntMap().get(Expression.create(variable.getName())));
-    }
-    log("");
-    log("Penalty (weight)");
-    for (Constraint constraint : model.getConstraints()) {
-      if (constraint.isHard()) {
-        continue;
-      }
-      log("%s (%d) = %d", constraint.getName(), constraint.getWeight(),
-          bestSolution.getIntMap().get(translator.getPenaltyVariableOf(constraint)));
-    }
-    log("");
-    log("Optimum Found OBJ = %d", ub);
-    log("Solve Count = %d", solveCount);
-    log("Cpu Time = %d [ms]", (timerEnd - timerBegin));
-  }
-
-  private static void solveByIncrementalMethod(
-      SchedulingProblem problem, Map<String, String> options) throws Exception {
-    new IncrementalMethod(options).solve(problem);
-  }
-
-  public static void solveByHybridMethod(SchedulingProblem problem, Map<String, String> options)
-      throws Exception {
-    new HybridMethod(options).solve(problem);
-  }
-
   public static void encodeSugar(SchedulingProblem problem, Map<String, String> options)
       throws Exception {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
@@ -383,16 +214,16 @@ public final class Main {
         solveWithScop(sp, options);
       } break;
       case "linear": {
-        solveWithSugarLinear(sp, options);
+        new LinearMethod(options).solve(sp);
       } break;
       case "binary": {
-        solveWithSugarBinary(sp, options);
+        new BinaryMethod(options).solve(sp);
       } break;
       case "incremental": {
-        solveByIncrementalMethod(sp, options);
+        new IncrementalMethod(options).solve(sp);
       } break;
       case "hybrid": {
-        solveByHybridMethod(sp, options);
+        new HybridMethod(options).solve(sp);
       } break;
       case "encode": {
         encodeSugar(sp, options);

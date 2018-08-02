@@ -25,15 +25,39 @@ import java.util.List;
 import java.util.Map;
 
 final class HybridMethod {
+  private Model model;
+  private List<Constraint> hardConstraints;
+  private List<Constraint> heavyConstraints; private List<Constraint> lightConstraints;
+
+  private Model2ScopTranslator scopTranslator;
+  private Scop4j scop4j;
+
+  private Model2SugarTranslator sugarTranslator;
+  private Sugar4j sugar4j;
+
+  private jp.ac.meiji.igusso.coptool.sugar.Solution bestSolution;
+
+  private int solveCount;
+  private long timerBegin;
+  private long timerEnd;
+
+  private int SCOP_TIMEOUT = 60;
 
   HybridMethod(Map<String, String> options) {
+    if (options.containsKey("SCOP_TIMEOUT")) {
+      SCOP_TIMEOUT = Integer.valueOf(options.get("SCOP_TIMEOUT"));
+    }
   }
 
-  void solve(SchedulingProblem problem) throws Exception {
-    final long timerBegin = System.currentTimeMillis();
-
+  private void setup(SchedulingProblem problem) {
     SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    Model model = spe.encode();
+    model = spe.encode();
+
+    scopTranslator = Model2ScopTranslator.newInstance();
+    scop4j = Scop4j.newInstance();
+
+    sugarTranslator = Model2SugarTranslator.newInstance();
+    sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
 
     log("Classifying Constraints By Weight...");
     int maxWeight = 0;
@@ -43,9 +67,9 @@ final class HybridMethod {
       }
     }
 
-    List<Constraint> hardConstraints = new ArrayList<>();
-    List<Constraint> heavyConstraints = new ArrayList<>();
-    List<Constraint> lightConstraints = new ArrayList<>();
+    hardConstraints = new ArrayList<>();
+    heavyConstraints = new ArrayList<>();
+    lightConstraints = new ArrayList<>();
     for (Constraint constraint : model.getConstraints()) {
       if (constraint.isHard()) {
         hardConstraints.add(constraint);
@@ -57,13 +81,20 @@ final class HybridMethod {
         lightConstraints.add(constraint);
       }
     }
+    Collections.sort(
+        lightConstraints, (c1, c2) -> (Integer.compare(c1.getWeight(), c2.getWeight())));
+    Collections.reverse(lightConstraints);
+
+    log("Maximum Weight = %d", maxWeight);
+    log("Hard  Constraint Count = %d", hardConstraints.size());
+    log("Heavy Constraint Count = %d", heavyConstraints.size());
+    log("Light Constraint Count = %d", lightConstraints.size());
     log("Done");
+  }
 
-    log("---------------- Search Initial Solution With SCOP ----------------");
-
+  private void translateModel() {
     log("Translating Constraints For SCOP...");
-    Scop4j scop4j = Scop4j.newInstance();
-    Model2ScopTranslator scopTranslator = Model2ScopTranslator.newInstance();
+    scopTranslator = Model2ScopTranslator.newInstance();
     for (Variable variable : model.getVariables()) {
       scop4j.addVariable(scopTranslator.translate(variable));
     }
@@ -71,50 +102,6 @@ final class HybridMethod {
       scop4j.addConstraint(scopTranslator.translate(constraint));
     }
     log("Done");
-
-    log("Searching Initial Solution With SCOP...");
-    scop4j.setTimeout(180);
-    final jp.ac.meiji.igusso.coptool.scop.Solution scopSolution = scop4j.solve();
-    log("Done");
-    log("");
-
-    log("Scop Log");
-    List<String> logBody = Files.readAllLines(scop4j.getLogFile(), Charset.defaultCharset());
-    for (String line : logBody) {
-      log(line);
-    }
-    log("Done");
-    log("");
-
-    if (scopSolution.getHardPenalty() > 0) {
-      log("Found No Feasible Solution");
-      return;
-    }
-
-    log("Scop Solution");
-    for (Variable variable : model.getVariables()) {
-      log("%s = %s", variable.getName(),
-          scopSolution.getSolution().get(scopTranslator.translate(variable)));
-    }
-    log("Penalty = %d", scopSolution.getSoftPenalty());
-    log("Cpu Time = %d [ms]", scopSolution.getCpuTime());
-    log("Cpu Time (Last Improved) = %d [ms]", scopSolution.getLastImprovedCpuTime());
-    log("Done");
-
-    int scopHeavyConstraintViolation = 0;
-    for (Constraint constraint : heavyConstraints) {
-      Map<jp.ac.meiji.igusso.coptool.scop.Constraint, Integer> violatedMap =
-          scopSolution.getViolatedConstraints();
-      if (violatedMap.containsKey(scopTranslator.translate(constraint))) {
-        scopHeavyConstraintViolation += violatedMap.get(scopTranslator.translate(constraint));
-      }
-    }
-    log("Scop Violates Heavy Constraints %d Times", scopHeavyConstraintViolation);
-
-    Model2SugarTranslator sugarTranslator = Model2SugarTranslator.newInstance();
-    Sugar4j sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
-
-    log("---------------- Improve Solution With SAT Solver ----------------");
 
     log("Translating Constraints For Sugar...");
     for (Variable variable : model.getVariables()) {
@@ -137,10 +124,60 @@ final class HybridMethod {
     sugar4j.addIntVariable("_P", 0, maxPenaltyOfHeavyConstraints);
     sugar4j.addConstraint(create(Expression.EQ, create("_P"), create(Expression.ADD, terms)));
     log("Done");
+  }
 
-    log("SAT Encoding...");
+  private void encodeConstraints() throws Exception {
+    log("Encoding Constraints...");
+
     sugar4j.update();
+
     log("Done");
+  }
+
+  private void searchSolution() throws Exception {
+    timerBegin = System.currentTimeMillis();
+
+    log("---------------- Search Initial Solution With SCOP ----------------");
+    log("Searching Initial Solution With SCOP...");
+
+    scop4j.setTimeout(SCOP_TIMEOUT);
+    jp.ac.meiji.igusso.coptool.scop.Solution scopSolution = scop4j.solve();
+    log("Done");
+
+    log("Scop Log");
+    List<String> logBody = Files.readAllLines(scop4j.getLogFile(), Charset.defaultCharset());
+    for (String line : logBody) {
+      log(line);
+    }
+    log("Done");
+
+    if (scopSolution.getHardPenalty() > 0) {
+      log("Found No Feasible Solution");
+      return;
+    }
+
+    log("Scop Solution");
+    for (Variable variable : model.getVariables()) {
+      log("%s = %s", variable.getName(),
+          scopSolution.getSolution().get(scopTranslator.translate(variable)));
+    }
+    log("Penalty = %d", scopSolution.getSoftPenalty());
+    log("Cpu Time = %d [ms]", scopSolution.getCpuTime());
+    log("Cpu Time (Last Improved) = %d [ms]", scopSolution.getLastImprovedCpuTime());
+
+    int scopHeavyConstraintViolation = 0;
+    for (Constraint constraint : heavyConstraints) {
+      Map<jp.ac.meiji.igusso.coptool.scop.Constraint, Integer> violatedMap =
+          scopSolution.getViolatedConstraints();
+      if (violatedMap.containsKey(scopTranslator.translate(constraint))) {
+        scopHeavyConstraintViolation += violatedMap.get(scopTranslator.translate(constraint));
+      }
+    }
+    log("Scop Violates Heavy Constraints %d Times", scopHeavyConstraintViolation);
+
+    log("Done");
+
+    log("---------------- Improve Solution With SAT Solver ----------------");
 
     log("Add Constraint About SCOP's Solution");
     Expression heavyBoundConstraint =
@@ -161,20 +198,16 @@ final class HybridMethod {
     log("Done");
 
     log("Searching First Solution...");
-    int solveCount = 0;
+    solveCount = 0;
+    bestSolution = null;
+
     jp.ac.meiji.igusso.coptool.sugar.Solution sugarSolution = sugar4j.solve();
-    jp.ac.meiji.igusso.coptool.sugar.Solution sugarBestSolution = null;
+    solveCount++;
     if (!sugarSolution.isSat()) {
       log("UNSAT (Something Wrong Happend)");
       return;
     }
-    solveCount++;
-    log("Done");
-
-    log("Sorting Light Constraints...");
-    Collections.sort(
-        lightConstraints, (c1, c2) -> (Integer.compare(c1.getWeight(), c2.getWeight())));
-    Collections.reverse(lightConstraints);
+    bestSolution = sugarSolution;
     log("Done");
 
     for (Constraint constraint : lightConstraints) {
@@ -191,7 +224,7 @@ final class HybridMethod {
         log("UNSAT (Something Wrong Happend)");
         return;
       }
-      sugarBestSolution = sugarSolution;
+      bestSolution = sugarSolution;
 
       Expression penaltyVariable = sugarTranslator.getPenaltyVariableOf(constraint);
       int penalty = sugarSolution.getIntMap().get(penaltyVariable);
@@ -208,8 +241,9 @@ final class HybridMethod {
           break;
         }
         penalty = sugarSolution.getIntMap().get(penaltyVariable);
+        sugar4j.addConstraint(create(Expression.LE, penaltyVariable, create(penalty)));
         log("Found Penalty = %d", penalty);
-        sugarBestSolution = sugarSolution;
+        bestSolution = sugarSolution;
       }
       log("Complete To Improve Penalty = %d", penalty);
 
@@ -218,14 +252,13 @@ final class HybridMethod {
       sugar4j.addConstraint(penaltyBind);
       log("Done", penaltyBind.toString());
     }
+    timerEnd = System.currentTimeMillis();
+  }
 
-    final long timerEnd = System.currentTimeMillis();
-
-    log("");
+  void displaySolution() {
     log("Solution");
     for (Variable variable : model.getVariables()) {
-      log("%s = %d", variable.getName(),
-          sugarBestSolution.getIntMap().get(create(variable.getName())));
+      log("%s = %d", variable.getName(), bestSolution.getIntMap().get(create(variable.getName())));
     }
 
     log("");
@@ -236,14 +269,32 @@ final class HybridMethod {
         continue;
       }
       log("%s (%d) = %d", constraint.getName(), constraint.getWeight(),
-          sugarBestSolution.getIntMap().get(sugarTranslator.getPenaltyVariableOf(constraint)));
+          bestSolution.getIntMap().get(sugarTranslator.getPenaltyVariableOf(constraint)));
       sumOfPenalty += constraint.getWeight()
-          * sugarBestSolution.getIntMap().get(sugarTranslator.getPenaltyVariableOf(constraint));
+          * bestSolution.getIntMap().get(sugarTranslator.getPenaltyVariableOf(constraint));
     }
     log("");
 
     log("Optimum Found OBJ = %d", sumOfPenalty);
     log("Solve Count = %d", solveCount);
     log("Cpu Time = %d [ms]", (timerEnd - timerBegin));
+  }
+
+  void solve(SchedulingProblem problem) throws Exception {
+    setup(problem);
+    translateModel();
+    encodeConstraints();
+
+    Thread hook = new Thread() {
+      @Override
+      public void run() {
+        timerEnd = System.currentTimeMillis();
+      }
+    };
+    Runtime.getRuntime().addShutdownHook(hook);
+    searchSolution();
+    Runtime.getRuntime().removeShutdownHook(hook);
+
+    displaySolution();
   }
 }
