@@ -4,7 +4,7 @@
   <groupId>jp.ac.meiji.igusso.coptool</groupId>
   <artifactId>coptool</artifactId>
   <packaging>jar</packaging>
-  <version>0.2</version>
+  <version>0.3</version>
   <name>coptool</name>
   <url>http://maven.apache.org</url>
 
@@ -29,10 +29,31 @@
       <version>1.18.0</version>
       <scope>provided</scope>
     </dependency>
+
+    <dependency>
+      <groupId>jp.kobe_u.sugar</groupId>
+      <artifactId>sugar</artifactId>
+      <version>2.3.3</version>
+    </dependency>
+
+    <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>4.5.2</version>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.0</version>
+        <configuration>
+          <useIncrementalCompilation>false</useIncrementalCompilation>
+        </configuration>
+      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -67,9 +88,11 @@
           <charset>UTF-8</charset>
           <docencoding>UTF-8</docencoding>
           <sourcepath>target/generated-sources/delombok</sourcepath>
+          <additionalOptions>-html5</additionalOptions>
         </configuration>
       </plugin>
 
+      <!--
       <plugin>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok-maven-plugin</artifactId>
@@ -86,6 +109,27 @@
           <addOutputDirectory>false</addOutputDirectory>
           <sourceDirectory>src/main/java</sourceDirectory>
         </configuration>
+      </plugin>
+      -->
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>

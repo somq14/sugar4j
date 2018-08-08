@@ -7,20 +7,23 @@ import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.ShiftOffRequests;
 import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.ShiftOnRequests;
 import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.Staff;
 
-import jp.ac.meiji.igusso.coptool.Comparator;
-import jp.ac.meiji.igusso.coptool.ConflictPointConstraint;
-import jp.ac.meiji.igusso.coptool.Constraint;
-import jp.ac.meiji.igusso.coptool.LinearConstraint;
-import jp.ac.meiji.igusso.coptool.Model;
-import jp.ac.meiji.igusso.coptool.PseudoBooleanConstraint;
-import jp.ac.meiji.igusso.coptool.Variable;
+import jp.ac.meiji.igusso.coptool.model.Comparator;
+import jp.ac.meiji.igusso.coptool.model.ConflictPointConstraint;
+import jp.ac.meiji.igusso.coptool.model.Constraint;
+import jp.ac.meiji.igusso.coptool.model.Domain;
+import jp.ac.meiji.igusso.coptool.model.LinearConstraint;
+import jp.ac.meiji.igusso.coptool.model.Model;
+import jp.ac.meiji.igusso.coptool.model.PseudoBooleanConstraint;
+import jp.ac.meiji.igusso.coptool.model.Variable;
 import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // Java CHECKSTYLE:OFF MemberName
 // Java CHECKSTYLE:OFF AbbreviationAsWordInName
@@ -56,8 +59,12 @@ public final class SchedulingProblemEncoder {
   private int[][] V_MAX;
 
   // Variables (lowercase)
+  /** x[i][d] : スタッフiがd日目にするシフトを表す. (0は休暇) */
   private Variable[][] x;
+  /** k[i][w] : スタッフiが週末wを休暇にしないとき1, そうでないとき0. */
   private Variable[][] k;
+  /** xt[i][d] : スタッフiのd日目の勤務時間を表す. */
+  private Variable[][] xt;
 
   private void initializeParameters() {
     List<Staff> iList = new ArrayList<>();
@@ -184,7 +191,8 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int d : D) {
         String varName = String.format("x_i%02d_d%02d", i, d);
-        x[i][d] = model.addVariable(varName, T.length);
+        x[i][d] = Variable.of(varName, T.length);
+        model.addVariable(x[i][d]);
       }
     }
 
@@ -192,7 +200,23 @@ public final class SchedulingProblemEncoder {
     for (int i : I) {
       for (int w : W) {
         String varName = String.format("k_i%02d_w%d", i, w);
-        k[i][w] = model.addVariable(varName, 2);
+        k[i][w] = Variable.of(varName, 2);
+        model.addVariable(k[i][w]);
+      }
+    }
+
+    Set<Integer> shiftLengthSet = new HashSet<>();
+    shiftLengthSet.add(0);
+    for (int t = 1; t < T.length; t++) {
+      shiftLengthSet.add(L[t]);
+    }
+
+    xt = new Variable[I.length][D.length];
+    for (int i : I) {
+      for (int d : D) {
+        String varName = String.format("xt_i%02d_d%02d", i, d);
+        xt[i][d] = Variable.of(varName, Domain.of(shiftLengthSet));
+        model.addVariable(xt[i][d]);
       }
     }
   }
@@ -243,6 +267,10 @@ public final class SchedulingProblemEncoder {
 
     for (int i : I) {
       for (int t = 1; t < T.length; t++) {
+        if (M_MAX[i][t] == H) {
+          continue;
+        }
+
         String consName = format("C03_i%02d_t%02d", i, t);
         PseudoBooleanConstraint.Builder cons =
             PseudoBooleanConstraint.of(consName, Comparator.LE, M_MAX[i][t]);
@@ -259,28 +287,47 @@ public final class SchedulingProblemEncoder {
   /**
   /* C04:
    * 任意のスタッフiに対して， 総勤務時間の下限bmin[i]と上限bmax[i]が定められている.
+   * スタッフiがd日目に勤務する時間 xt[i][d] の総和を取ることで, 総勤務時間が求める.
    */
   private List<Constraint> constraint4() {
     List<Constraint> res = new ArrayList<>();
 
+    Set<Integer> shiftLengthSet = new HashSet<>();
+    shiftLengthSet.add(0);
+    for (int t = 1; t < T.length; t++) {
+      shiftLengthSet.add(L[t]);
+    }
+
+    for (int i : I) {
+      for (int d : D) {
+        String consName = format("C04_i%02d_d%02d", i, d);
+        PseudoBooleanConstraint.Builder cons =
+            PseudoBooleanConstraint.of(consName, Comparator.EQ, 0);
+        for (int length : shiftLengthSet) {
+          if (length == 0) {
+            continue;
+          }
+          cons.addTerm(-length, xt[i][d], length);
+        }
+        for (int t = 1; t < T.length; t++) {
+          cons.addTerm(L[t], x[i][d], t);
+        }
+        res.add(cons.build());
+      }
+    }
+
     for (int i : I) {
       String consName1 = format("C04LB_i%02d", i);
-      PseudoBooleanConstraint.Builder cons1 =
-          PseudoBooleanConstraint.of(consName1, Comparator.GE, B_MIN[i]);
+      LinearConstraint.Builder cons1 = LinearConstraint.of(consName1, Comparator.GE, B_MIN[i]);
       for (int d : D) {
-        for (int t = 1; t < T.length; t++) {
-          cons1.addTerm(L[t], x[i][d], t);
-        }
+        cons1.addTerm(1, xt[i][d]);
       }
       res.add(cons1.build());
 
       String consName2 = format("C04UB_i%02d", i);
-      PseudoBooleanConstraint.Builder cons2 =
-          PseudoBooleanConstraint.of(consName2, Comparator.LE, B_MAX[i]);
+      LinearConstraint.Builder cons2 = LinearConstraint.of(consName2, Comparator.LE, B_MAX[i]);
       for (int d : D) {
-        for (int t = 1; t < T.length; t++) {
-          cons2.addTerm(L[t], x[i][d], t);
-        }
+        cons2.addTerm(1, xt[i][d]);
       }
       res.add(cons2.build());
     }
