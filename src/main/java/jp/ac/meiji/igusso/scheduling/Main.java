@@ -1,14 +1,14 @@
 package jp.ac.meiji.igusso.scheduling;
 
-import jp.ac.meiji.igusso.coptool.model.Constraint;
-import jp.ac.meiji.igusso.coptool.model.Model;
-import jp.ac.meiji.igusso.coptool.model.Variable;
-import jp.ac.meiji.igusso.coptool.sat.IpasirSolver;
-import jp.ac.meiji.igusso.coptool.scop.Model2ScopTranslator;
-import jp.ac.meiji.igusso.coptool.scop.Scop4j;
-import jp.ac.meiji.igusso.coptool.sugar.Comparator;
-import jp.ac.meiji.igusso.coptool.sugar.Model2SugarTranslator;
-import jp.ac.meiji.igusso.coptool.sugar.Sugar4j;
+import jp.ac.meiji.igusso.model.Constraint;
+import jp.ac.meiji.igusso.model.Model;
+import jp.ac.meiji.igusso.model.Model2ScopTranslator;
+import jp.ac.meiji.igusso.model.Model2SugarTranslator;
+import jp.ac.meiji.igusso.model.Variable;
+import jp.ac.meiji.igusso.scop4j.Scop4j;
+import jp.ac.meiji.igusso.sugar4j.Comparator;
+import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
+import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;
 
 import java.io.FileReader;
@@ -62,7 +62,7 @@ public final class Main {
 
     log("Searching");
     scop4j.setTimeout(3600);
-    final jp.ac.meiji.igusso.coptool.scop.Solution solution = scop4j.solve();
+    final jp.ac.meiji.igusso.scop4j.Solution solution = scop4j.solve();
     log("Done");
     log("");
 

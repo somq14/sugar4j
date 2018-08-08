@@ -3,17 +3,15 @@ package jp.ac.meiji.igusso.scheduling;
 import static jp.ac.meiji.igusso.scheduling.Main.log;
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import jp.ac.meiji.igusso.coptool.model.Constraint;
-import jp.ac.meiji.igusso.coptool.model.Model;
-import jp.ac.meiji.igusso.coptool.model.Variable;
-import jp.ac.meiji.igusso.coptool.sat.IpasirSolver;
-import jp.ac.meiji.igusso.coptool.scop.Model2ScopTranslator;
-import jp.ac.meiji.igusso.coptool.scop.Scop4j;
-import jp.ac.meiji.igusso.coptool.sugar.Comparator;
-import jp.ac.meiji.igusso.coptool.sugar.Model2SugarTranslator;
-import jp.ac.meiji.igusso.coptool.sugar.Sugar4j;
-import jp.ac.meiji.igusso.scheduling.SchedulingProblem;
-import jp.ac.meiji.igusso.scheduling.SchedulingProblemEncoder;
+import jp.ac.meiji.igusso.model.Constraint;
+import jp.ac.meiji.igusso.model.Model;
+import jp.ac.meiji.igusso.model.Model2ScopTranslator;
+import jp.ac.meiji.igusso.model.Model2SugarTranslator;
+import jp.ac.meiji.igusso.model.Variable;
+import jp.ac.meiji.igusso.scop4j.Scop4j;
+import jp.ac.meiji.igusso.sugar4j.Comparator;
+import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
+import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;
 
 import java.nio.charset.Charset;
@@ -36,7 +34,7 @@ final class HybridMethod {
   private Model2SugarTranslator sugarTranslator;
   private Sugar4j sugar4j;
 
-  private jp.ac.meiji.igusso.coptool.sugar.Solution bestSolution;
+  private jp.ac.meiji.igusso.sugar4j.Solution bestSolution;
 
   private int solveCount;
   private long timerBegin;
@@ -142,7 +140,7 @@ final class HybridMethod {
     log("Searching Initial Solution With SCOP...");
 
     scop4j.setTimeout(scopTimeout);
-    final jp.ac.meiji.igusso.coptool.scop.Solution scopSolution = scop4j.solve();
+    final jp.ac.meiji.igusso.scop4j.Solution scopSolution = scop4j.solve();
     log("Done");
 
     log("Scop Log");
@@ -168,7 +166,7 @@ final class HybridMethod {
 
     int scopHeavyConstraintViolation = 0;
     for (Constraint constraint : heavyConstraints) {
-      Map<jp.ac.meiji.igusso.coptool.scop.Constraint, Integer> violatedMap =
+      Map<jp.ac.meiji.igusso.scop4j.Constraint, Integer> violatedMap =
           scopSolution.getViolatedConstraints();
       if (violatedMap.containsKey(scopTranslator.translate(constraint))) {
         scopHeavyConstraintViolation += violatedMap.get(scopTranslator.translate(constraint));
@@ -202,7 +200,7 @@ final class HybridMethod {
     solveCount = 0;
     bestSolution = null;
 
-    jp.ac.meiji.igusso.coptool.sugar.Solution sugarSolution = sugar4j.solve();
+    jp.ac.meiji.igusso.sugar4j.Solution sugarSolution = sugar4j.solve();
     solveCount++;
     if (!sugarSolution.isSat()) {
       log("UNSAT (Something Wrong Happend)");
