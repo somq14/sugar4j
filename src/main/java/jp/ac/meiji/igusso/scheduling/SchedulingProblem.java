@@ -8,7 +8,10 @@ import lombok.NonNull;
 import lombok.ToString;
 import lombok.Value;
 
+import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,53 +28,6 @@ public final class SchedulingProblem {
   private List<ShiftOnRequests> shiftOnRequests;
   private List<ShiftOffRequests> shiftOffRequests;
   private List<Cover> cover;
-
-  @Override
-  public String toString() {
-    List<String> res = new ArrayList<>();
-
-    res.add(format("SECTION_HORIZON"));
-    res.add("" + length);
-    res.add("");
-
-    res.add(format("SECTION_SHIFTS"));
-    for (String key : shifts.keySet()) {
-      res.add(shifts.get(key).toString());
-    }
-    res.add("");
-
-    res.add(format("SECTION_STAFF"));
-    for (String key : staff.keySet()) {
-      res.add(staff.get(key).toString());
-    }
-    res.add("");
-
-    res.add(format("SECTION_DAYS_OFF"));
-    for (String key : daysOff.keySet()) {
-      res.add(daysOff.get(key).toString());
-    }
-    res.add("");
-
-    res.add(format("SECTION_SHIFT_ON_REQUESTS"));
-    for (ShiftOnRequests elem : shiftOnRequests) {
-      res.add(elem.toString());
-    }
-    res.add("");
-
-    res.add(format("SECTION_SHIFT_OFF_REQUESTS"));
-    for (ShiftOffRequests elem : shiftOffRequests) {
-      res.add(elem.toString());
-    }
-    res.add("");
-
-    res.add(format("SECTION_COVER"));
-    for (Cover elem : cover) {
-      res.add(elem.toString());
-    }
-    res.add("");
-
-    return String.join(System.getProperty("line.separator"), res);
-  }
 
   private SchedulingProblem(int length, @NonNull Map<String, Shift> shifts,
       @NonNull Map<String, Staff> staff, @NonNull Map<String, DaysOff> daysOff,
@@ -166,7 +122,107 @@ public final class SchedulingProblem {
     private int weightOver;
   }
 
+  public void encode(@NonNull Writer writer) {
+    PrintWriter out = new PrintWriter(writer);
+
+    out.println("# This is a comment. Comments start with #");
+    out.println("SECTION_HORIZON");
+    out.println("# All instances start on a Monday");
+    out.println("# The horizon length in days:");
+    out.println(getLength());
+    out.println();
+
+    out.println("SECTION_SHIFTS");
+    out.println("# ShiftID, Length in mins, Shifts which cannot follow this shift | separated");
+    for (Shift shift : getShifts().values()) {
+      String id = shift.getId().toString();
+      String length = String.valueOf(shift.getLength());
+      String notFollow = String.join("|", shift.getNotFollow());
+      out.println(String.join(",", id, length, notFollow));
+    }
+    out.println();
+
+    out.println("SECTION_STAFF");
+    out.println("# ID, MaxShifts, MaxTotalMinutes, MinTotalMinutes,"
+        + " MaxConsecutiveShifts, MinConsecutiveShifts, MinConsecutiveDaysOff, MaxWeekends");
+    for (Staff staff : getStaff().values()) {
+      String id = staff.getId();
+
+      List<String> maxShiftTerms = new ArrayList<>();
+      for (String shift : staff.getMaxShifts().keySet()) {
+        maxShiftTerms.add(format("%s=%d", shift, staff.getMaxShifts().get(shift)));
+      }
+      String maxShifts = String.join("|", maxShiftTerms);
+
+      String maxTotalMinutes = String.valueOf(staff.getMaxTotalMinutes());
+      String minTotalMinutes = String.valueOf(staff.getMinTotalMinutes());
+      String maxConsecutiveShifts = String.valueOf(staff.getMaxConsecutiveShifts());
+      String minConsecutiveShifts = String.valueOf(staff.getMinConsecutiveShifts());
+      String minConsecutiveDayOff = String.valueOf(staff.getMinConsecutiveDayOff());
+      String maxWeekends = String.valueOf(staff.getMaxWeekends());
+      out.println(String.join(",", id, maxShifts, maxTotalMinutes, minTotalMinutes,
+          maxConsecutiveShifts, minConsecutiveShifts, minConsecutiveDayOff, maxWeekends));
+    }
+    out.println();
+
+    out.println("SECTION_DAYS_OFF");
+    out.println("# EmployeeID, DayIndexes (start at zero)");
+    for (DaysOff daysOff : getDaysOff().values()) {
+      List<String> items = new ArrayList<>();
+      items.add(daysOff.getStaffId());
+      for (Integer day : daysOff.getDayIndexes()) {
+        items.add(String.valueOf(day));
+      }
+      out.println(String.join(",", items));
+    }
+    out.println();
+
+    out.println("SECTION_SHIFT_ON_REQUESTS");
+    out.println("# EmployeeID, Day, ShiftID, Weight");
+    for (ShiftOnRequests req : getShiftOnRequests()) {
+      String staffId = req.getStaffId();
+      String day = String.valueOf(req.getDay());
+      String shiftId = req.getShiftId();
+      String weight = String.valueOf(req.getWeight());
+      out.println(String.join(",", staffId, day, shiftId, weight));
+    }
+    out.println();
+
+    out.println("SECTION_SHIFT_OFF_REQUESTS");
+    out.println("# EmployeeID, Day, ShiftID, Weight");
+    for (ShiftOffRequests req : getShiftOffRequests()) {
+      String staffId = req.getStaffId();
+      String day = String.valueOf(req.getDay());
+      String shiftId = req.getShiftId();
+      String weight = String.valueOf(req.getWeight());
+      out.println(String.join(",", staffId, day, shiftId, weight));
+    }
+    out.println();
+
+    out.println("SECTION_COVER");
+    out.println("# Day, ShiftID, Requirement, Weight for under, Weight for over");
+    for (Cover cover : getCover()) {
+      String day = String.valueOf(cover.getDay());
+      String shiftId = cover.getShiftId();
+      String requirement = String.valueOf(cover.getRequirement());
+      String weightUnder = String.valueOf(cover.getWeightUnder());
+      String weightOver = String.valueOf(cover.getWeightOver());
+      out.println(String.join(",", day, shiftId, requirement, weightUnder, weightOver));
+    }
+    out.println();
+
+    out.flush();
+    out.close();
+  }
+
   public static SchedulingProblem parse(Reader reader) {
     return new SchedulingProblemParser(reader).parse();
+  }
+
+  @Override
+  public String toString() {
+    StringWriter writer = new StringWriter();
+    encode(writer);
+    return writer.toString();
   }
 }
