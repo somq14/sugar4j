@@ -27,7 +27,8 @@ import java.util.Map;
 final class HybridMethod {
   private Model model;
   private List<Constraint> hardConstraints;
-  private List<Constraint> heavyConstraints; private List<Constraint> lightConstraints;
+  private List<Constraint> heavyConstraints;
+  private List<Constraint> lightConstraints;
 
   private Model2ScopTranslator scopTranslator;
   private Scop4j scop4j;
@@ -41,11 +42,11 @@ final class HybridMethod {
   private long timerBegin;
   private long timerEnd;
 
-  private int SCOP_TIMEOUT = 60;
+  private int scopTimeout = 60;
 
   HybridMethod(Map<String, String> options) {
-    if (options.containsKey("SCOP_TIMEOUT")) {
-      SCOP_TIMEOUT = Integer.valueOf(options.get("SCOP_TIMEOUT"));
+    if (options.containsKey("scop_timeout")) {
+      scopTimeout = Integer.valueOf(options.get("scop_timeout"));
     }
   }
 
@@ -140,8 +141,8 @@ final class HybridMethod {
     log("---------------- Search Initial Solution With SCOP ----------------");
     log("Searching Initial Solution With SCOP...");
 
-    scop4j.setTimeout(SCOP_TIMEOUT);
-    jp.ac.meiji.igusso.coptool.scop.Solution scopSolution = scop4j.solve();
+    scop4j.setTimeout(scopTimeout);
+    final jp.ac.meiji.igusso.coptool.scop.Solution scopSolution = scop4j.solve();
     log("Done");
 
     log("Scop Log");
