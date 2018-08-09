@@ -28,7 +28,7 @@ public final class Main {
   private static void usage() {
     log("Main File Method Options...");
     log("  File    : path to instance file (required)");
-    log("  Method  : scop|linear|binary|incremental|hybrid|threestep|encode (required)");
+    log("  Method  : scop|linear|binary|incremental|hybrid|2step|3step|encode (required)");
     log("  Options : parameters for algorithms");
   }
 
@@ -225,7 +225,10 @@ public final class Main {
       case "hybrid": {
         new HybridMethod(options).solve(sp);
       } break;
-      case "threestep": {
+      case "2step": {
+        new TwoStepMethod(options).solve(sp);
+      } break;
+      case "3step": {
         new ThreeStepMethod(options).solve(sp);
       } break;
       case "encode": {
