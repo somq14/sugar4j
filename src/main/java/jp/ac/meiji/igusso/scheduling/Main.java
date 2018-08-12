@@ -7,7 +7,7 @@ import jp.ac.meiji.igusso.model.Model2SugarTranslator;
 import jp.ac.meiji.igusso.model.Variable;
 import jp.ac.meiji.igusso.scop4j.Scop4j;
 import jp.ac.meiji.igusso.sugar4j.Comparator;
-import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
+import jp.ac.meiji.igusso.sugar4j.DummySolver;
 import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;
 
@@ -89,7 +89,7 @@ public final class Main {
     Model model = spe.encode();
 
     Model2SugarTranslator translator = Model2SugarTranslator.newInstance();
-    Sugar4j sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
+    Sugar4j sugar4j = Sugar4j.newInstance(DummySolver.getInstance());
 
     for (Variable variable : model.getVariables()) {
       sugar4j.addExpressions(translator.translate(variable));
@@ -128,7 +128,7 @@ public final class Main {
     //
     {
       Model2SugarTranslator translator2 = Model2SugarTranslator.newInstance();
-      Sugar4j sugar4j2 = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
+      Sugar4j sugar4j2 = Sugar4j.newInstance(DummySolver.getInstance());
       for (Variable variable : model.getVariables()) {
         sugar4j2.addExpressions(translator2.translate(variable));
       }
@@ -154,7 +154,7 @@ public final class Main {
     //
     {
       Model2SugarTranslator translator2 = Model2SugarTranslator.newInstance();
-      Sugar4j sugar4j2 = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
+      Sugar4j sugar4j2 = Sugar4j.newInstance(DummySolver.getInstance());
       for (Variable variable : model.getVariables()) {
         sugar4j2.addExpressions(translator2.translate(variable));
       }
