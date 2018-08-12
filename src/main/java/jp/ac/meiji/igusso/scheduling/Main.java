@@ -46,22 +46,17 @@ public final class Main {
 
   private static void solveWithScop(SchedulingProblem problem, Map<String, String> options)
       throws Exception {
-    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    Model model = spe.encode();
+    int timeout = options.containsKey("timeout") ? Integer.valueOf(options.get("timeout")) : -1;
 
-    log("Translating Constraints");
-    Model2ScopTranslator translator = Model2ScopTranslator.newInstance();
+    log("Generating Constraints");
+    Scop4jFormulator formulator = new Scop4jFormulator(problem);
     Scop4j scop4j = Scop4j.newInstance();
-    for (Variable variable : model.getVariables()) {
-      scop4j.addVariable(translator.translate(variable));
-    }
-    for (Constraint constraint : model.getConstraints()) {
-      scop4j.addConstraint(translator.translate(constraint));
-    }
+    scop4j.addVariables(formulator.generateVariables());
+    scop4j.addConstraints(formulator.generateAllConstraints());
     log("Done");
 
     log("Searching");
-    scop4j.setTimeout(3600);
+    scop4j.setTimeout(timeout);
     final jp.ac.meiji.igusso.scop4j.Solution solution = scop4j.solve();
     log("Done");
     log("");
@@ -79,9 +74,8 @@ public final class Main {
     }
 
     log("Solution");
-    for (Variable variable : model.getVariables()) {
-      log("%s = %s", variable.getName(),
-          solution.getSolution().get(translator.translate(variable)));
+    for (jp.ac.meiji.igusso.scop4j.Variable variable : scop4j.getVariables()) {
+      log("%s = %s", variable.getName(), solution.getSolution().get(variable));
     }
     log("Penalty = %d", solution.getSoftPenalty());
     log("Cpu Time = %d [ms]", solution.getCpuTime());
