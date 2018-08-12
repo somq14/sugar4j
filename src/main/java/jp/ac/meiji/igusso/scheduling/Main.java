@@ -46,7 +46,8 @@ public final class Main {
 
   private static void solveWithScop(SchedulingProblem problem, Map<String, String> options)
       throws Exception {
-    int timeout = options.containsKey("timeout") ? Integer.valueOf(options.get("timeout")) : -1;
+    final int timeout =
+        options.containsKey("timeout") ? Integer.valueOf(options.get("timeout")) : -1;
 
     log("Generating Constraints");
     Scop4jFormulator formulator = new Scop4jFormulator(problem);

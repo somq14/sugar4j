@@ -1,8 +1,8 @@
 package jp.ac.meiji.igusso.sugar4j;
 
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.NonNull;
+import lombok.ToString;
 
 import java.util.Arrays;
 import java.util.Collection;

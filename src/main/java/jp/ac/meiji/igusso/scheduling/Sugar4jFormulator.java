@@ -22,12 +22,12 @@ import jp.kobe_u.sugar.expression.Expression;
 import lombok.NonNull;
 import lombok.Value;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Collections;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
