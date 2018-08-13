@@ -62,123 +62,27 @@ public final class Scop4jFormulator {
   }
 
   private void initializeParameters() {
-    List<Staff> iList = new ArrayList<>();
-    for (String key : problem.getStaff().keySet()) {
-      iList.add(problem.getStaff().get(key));
-    }
-
-    Map<String, Integer> iMap = new HashMap<>();
-    for (int i = 0; i < iList.size(); i++) {
-      iMap.put(iList.get(i).getId(), i);
-    }
-
-    List<Shift> tList = new ArrayList<>();
-    for (String key : problem.getShifts().keySet()) {
-      tList.add(problem.getShifts().get(key));
-    }
-
-    Map<String, Integer> tMap = new HashMap<>();
-    for (int t = 1; t <= tList.size(); t++) {
-      tMap.put(tList.get(t - 1).getId(), t);
-    }
-
-    // initialize parameters
-    H = problem.getLength();
-
-    I = new int[problem.getStaff().size()];
-    for (int i = 0; i < I.length; i++) {
-      I[i] = i;
-    }
-
-    D = new int[H];
-    for (int d = 0; d < D.length; d++) {
-      D[d] = d;
-    }
-
-    W = new int[H / 7];
-    for (int w = 0; w < H / 7; w++) {
-      W[w] = w;
-    }
-
-    T = new int[problem.getShifts().size() + 1];
-    for (int t = 0; t < T.length; t++) {
-      T[t] = t;
-    }
-
-    R = new int[T.length][];
-    R[0] = null;
-    for (int t = 1; t < T.length; t++) {
-      List<String> notFollow = tList.get(t - 1).getNotFollow();
-
-      R[t] = new int[notFollow.size()];
-      for (int j = 0; j < notFollow.size(); j++) {
-        R[t][j] = tMap.get(notFollow.get(j));
-      }
-    }
-
-    N = new int[I.length][];
-    for (int i : I) {
-      List<Integer> daysOff = problem.getDaysOff().get(iList.get(i).getId()).getDayIndexes();
-
-      N[i] = new int[daysOff.size()];
-      for (int j = 0; j < daysOff.size(); j++) {
-        N[i][j] = daysOff.get(j);
-      }
-    }
-
-    L = new int[T.length];
-    for (int t = 1; t < T.length; t++) {
-      L[t] = tList.get(t - 1).getLength();
-    }
-
-    M_MAX = new int[I.length][T.length];
-    for (int i : I) {
-      for (int t = 1; t < T.length; t++) {
-        M_MAX[i][t] = iList.get(i).getMaxShifts().get(tList.get(t - 1).getId());
-      }
-    }
-
-    B_MIN = new int[I.length];
-    B_MAX = new int[I.length];
-    C_MIN = new int[I.length];
-    C_MAX = new int[I.length];
-    O_MIN = new int[I.length];
-    A_MAX = new int[I.length];
-    for (int i : I) {
-      B_MIN[i] = iList.get(i).getMinTotalMinutes();
-      B_MAX[i] = iList.get(i).getMaxTotalMinutes();
-      C_MIN[i] = iList.get(i).getMinConsecutiveShifts();
-      C_MAX[i] = iList.get(i).getMaxConsecutiveShifts();
-      O_MIN[i] = iList.get(i).getMinConsecutiveDayOff();
-      A_MAX[i] = iList.get(i).getMaxWeekends();
-    }
-
-    Q = new int[I.length][D.length][T.length];
-    for (ShiftOnRequests sor : problem.getShiftOnRequests()) {
-      int i = iMap.get(sor.getStaffId());
-      int d = sor.getDay();
-      int t = tMap.get(sor.getShiftId());
-      Q[i][d][t] = sor.getWeight();
-    }
-
-    P = new int[I.length][D.length][T.length];
-    for (ShiftOffRequests sor : problem.getShiftOffRequests()) {
-      int i = iMap.get(sor.getStaffId());
-      int d = sor.getDay();
-      int t = tMap.get(sor.getShiftId());
-      P[i][d][t] = sor.getWeight();
-    }
-
-    U = new int[D.length][T.length];
-    V_MIN = new int[D.length][T.length];
-    V_MAX = new int[D.length][T.length];
-    for (Cover cvr : problem.getCover()) {
-      int d = cvr.getDay();
-      int t = tMap.get(cvr.getShiftId());
-      U[d][t] = cvr.getRequirement();
-      V_MIN[d][t] = cvr.getWeightUnder();
-      V_MAX[d][t] = cvr.getWeightOver();
-    }
+    SchedulingProblemParameter parameter = new SchedulingProblemParameter(problem);
+    this.H = parameter.getH();
+    this.I = parameter.getI();
+    this.D = parameter.getD();
+    this.W = parameter.getW();
+    this.T = parameter.getT();
+    this.R = parameter.getR();
+    this.N = parameter.getN();
+    this.L = parameter.getL();
+    this.M_MAX = parameter.getMmax();
+    this.B_MIN = parameter.getBmin();
+    this.B_MAX = parameter.getBmax();
+    this.C_MIN = parameter.getCmin();
+    this.C_MAX = parameter.getCmax();
+    this.O_MIN = parameter.getOmin();
+    this.A_MAX = parameter.getAmax();
+    this.Q = parameter.getQ();
+    this.P = parameter.getP();
+    this.U = parameter.getU();
+    this.V_MIN = parameter.getVmin();
+    this.V_MAX = parameter.getVmax();
   }
 
   private void initializeVariables() {
@@ -216,7 +120,6 @@ public final class Scop4jFormulator {
 
     return Collections.unmodifiableList(res);
   }
-
 
   /**
    * C01:
