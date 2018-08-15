@@ -26,10 +26,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.Set;
 
 // Java CHECKSTYLE:OFF MemberName
 // Java CHECKSTYLE:OFF AbbreviationAsWordInName
@@ -58,7 +58,6 @@ public final class Sugar4jFormulator {
   private int[][] U;
   private int[][] V_MIN;
   private int[][] V_MAX;
-
   private List<Integer> SHIFT_LENGTH_SET;
 
   // Variables (lowercase)
@@ -69,146 +68,95 @@ public final class Sugar4jFormulator {
   /** k[i][w] : スタッフiが週末wを休暇にしないとき1, そうでないとき0. */
   private Expression[][] k;
 
+  // Generated Expressions
+  private List<Expression> variableDeclarations;
+  private List<Expression> constraint1;
+  private List<Expression> constraint2;
+  private List<Expression> constraint3;
+  private List<Expression> constraint4;
+  private List<Expression> constraint5;
+  private List<Expression> constraint6;
+  private List<Expression> constraint7;
+  private List<Expression> constraint8;
+  private List<Expression> constraint9;
+  private List<Expression> constraint11;
+  private List<Expression> constraint12;
+  private List<Expression> constraint13;
+  private List<Expression> constraint14;
+
+  // Generated Variables
+  private List<Expression> variables;
+  private List<Expression> penaltyVariables;
+
+  // Penalty Variables Info
+  private Map<Expression, Integer> penaltyVariableWeight;
+  private Map<Expression, Integer> penaltyVariableUpperBound;
+  private Map<Integer, List<Expression>> softConstraints;
+
   public Sugar4jFormulator(@NonNull SchedulingProblem problem) {
     this.problem = problem;
 
     initializeParameters();
-    initializeVariables();
+    this.variables = initializeVariables();
+    this.variableDeclarations = generateVariableDeclarations();
+
+    this.penaltyVariables = new ArrayList<>();
+    this.penaltyVariableWeight = new HashMap<>();
+    this.penaltyVariableUpperBound = new HashMap<>();
+    this.softConstraints = new HashMap<>();
+
+    generateConstraints();
+
+    this.penaltyVariables = Collections.unmodifiableList(penaltyVariables);
+    this.penaltyVariableWeight = Collections.unmodifiableMap(penaltyVariableWeight);
+    this.penaltyVariableUpperBound = Collections.unmodifiableMap(penaltyVariableUpperBound);
+    this.softConstraints = Collections.unmodifiableMap(softConstraints);
   }
 
+  /*
+   * PRIVATE
+   */
   private void initializeParameters() {
-    List<Staff> iList = new ArrayList<>();
-    for (String key : problem.getStaff().keySet()) {
-      iList.add(problem.getStaff().get(key));
+    SchedulingProblemParameter parameter = new SchedulingProblemParameter(problem);
+    this.H = parameter.getH();
+    this.I = parameter.getI();
+    this.D = parameter.getD();
+    this.W = parameter.getW();
+    this.T = parameter.getT();
+    this.R = parameter.getR();
+    this.N = parameter.getN();
+    this.L = parameter.getL();
+    this.M_MAX = parameter.getMmax();
+    this.B_MIN = parameter.getBmin();
+    this.B_MAX = parameter.getBmax();
+    this.C_MIN = parameter.getCmin();
+    this.C_MAX = parameter.getCmax();
+    this.O_MIN = parameter.getOmin();
+    this.A_MAX = parameter.getAmax();
+    this.Q = parameter.getQ();
+    this.P = parameter.getP();
+    this.U = parameter.getU();
+    this.V_MIN = parameter.getVmin();
+    this.V_MAX = parameter.getVmax();
+
+    Set<Integer> shiftLengthSet = new HashSet<>();
+    for (int l : L) {
+      shiftLengthSet.add(l);
     }
-
-    Map<String, Integer> iMap = new HashMap<>();
-    for (int i = 0; i < iList.size(); i++) {
-      iMap.put(iList.get(i).getId(), i);
-    }
-
-    List<Shift> tList = new ArrayList<>();
-    for (String key : problem.getShifts().keySet()) {
-      tList.add(problem.getShifts().get(key));
-    }
-
-    Map<String, Integer> tMap = new HashMap<>();
-    for (int t = 1; t <= tList.size(); t++) {
-      tMap.put(tList.get(t - 1).getId(), t);
-    }
-
-    // initialize parameters
-    H = problem.getLength();
-
-    I = new int[problem.getStaff().size()];
-    for (int i = 0; i < I.length; i++) {
-      I[i] = i;
-    }
-
-    D = new int[H];
-    for (int d = 0; d < D.length; d++) {
-      D[d] = d;
-    }
-
-    W = new int[H / 7];
-    for (int w = 0; w < H / 7; w++) {
-      W[w] = w;
-    }
-
-    T = new int[problem.getShifts().size() + 1];
-    for (int t = 0; t < T.length; t++) {
-      T[t] = t;
-    }
-
-    R = new int[T.length][];
-    R[0] = null;
-    for (int t = 1; t < T.length; t++) {
-      List<String> notFollow = tList.get(t - 1).getNotFollow();
-
-      R[t] = new int[notFollow.size()];
-      for (int j = 0; j < notFollow.size(); j++) {
-        R[t][j] = tMap.get(notFollow.get(j));
-      }
-    }
-
-    N = new int[I.length][];
-    for (int i : I) {
-      List<Integer> daysOff = problem.getDaysOff().get(iList.get(i).getId()).getDayIndexes();
-
-      N[i] = new int[daysOff.size()];
-      for (int j = 0; j < daysOff.size(); j++) {
-        N[i][j] = daysOff.get(j);
-      }
-    }
-
-    L = new int[T.length];
-    for (int t = 1; t < T.length; t++) {
-      L[t] = tList.get(t - 1).getLength();
-    }
-
-    M_MAX = new int[I.length][T.length];
-    for (int i : I) {
-      for (int t = 1; t < T.length; t++) {
-        M_MAX[i][t] = iList.get(i).getMaxShifts().get(tList.get(t - 1).getId());
-      }
-    }
-
-    B_MIN = new int[I.length];
-    B_MAX = new int[I.length];
-    C_MIN = new int[I.length];
-    C_MAX = new int[I.length];
-    O_MIN = new int[I.length];
-    A_MAX = new int[I.length];
-    for (int i : I) {
-      B_MIN[i] = iList.get(i).getMinTotalMinutes();
-      B_MAX[i] = iList.get(i).getMaxTotalMinutes();
-      C_MIN[i] = iList.get(i).getMinConsecutiveShifts();
-      C_MAX[i] = iList.get(i).getMaxConsecutiveShifts();
-      O_MIN[i] = iList.get(i).getMinConsecutiveDayOff();
-      A_MAX[i] = iList.get(i).getMaxWeekends();
-    }
-
-    Q = new int[I.length][D.length][T.length];
-    for (ShiftOnRequests sor : problem.getShiftOnRequests()) {
-      int i = iMap.get(sor.getStaffId());
-      int d = sor.getDay();
-      int t = tMap.get(sor.getShiftId());
-      Q[i][d][t] = sor.getWeight();
-    }
-
-    P = new int[I.length][D.length][T.length];
-    for (ShiftOffRequests sor : problem.getShiftOffRequests()) {
-      int i = iMap.get(sor.getStaffId());
-      int d = sor.getDay();
-      int t = tMap.get(sor.getShiftId());
-      P[i][d][t] = sor.getWeight();
-    }
-
-    U = new int[D.length][T.length];
-    V_MIN = new int[D.length][T.length];
-    V_MAX = new int[D.length][T.length];
-    for (Cover cvr : problem.getCover()) {
-      int d = cvr.getDay();
-      int t = tMap.get(cvr.getShiftId());
-      U[d][t] = cvr.getRequirement();
-      V_MIN[d][t] = cvr.getWeightUnder();
-      V_MAX[d][t] = cvr.getWeightOver();
-    }
-
-    SortedSet<Integer> shiftLengthSet = new TreeSet<>();
-    shiftLengthSet.add(0);
-    for (int t = 1; t < T.length; t++) {
-      shiftLengthSet.add(L[t]);
-    }
-    SHIFT_LENGTH_SET = Collections.unmodifiableList(new ArrayList<>(shiftLengthSet));
+    SHIFT_LENGTH_SET = new ArrayList<>(shiftLengthSet);
+    Collections.sort(SHIFT_LENGTH_SET);
+    SHIFT_LENGTH_SET = Collections.unmodifiableList(SHIFT_LENGTH_SET);
   }
 
-  private void initializeVariables() {
+  private List<Expression> initializeVariables() {
+    List<Expression> res = new ArrayList<>();
+
     x = new Expression[I.length][D.length][T.length];
     for (int i : I) {
       for (int d : D) {
         for (int t : T) {
           x[i][d][t] = create(format("x_i%02d_d%02d_t%02d", i, d, t));
+          res.add(x[i][d][t]);
         }
       }
     }
@@ -217,6 +165,7 @@ public final class Sugar4jFormulator {
     for (int i : I) {
       for (int d : D) {
         xt[i][d] = create(format("xt_i%02d_d%02d", i, d));
+        res.add(xt[i][d]);
       }
     }
 
@@ -224,11 +173,14 @@ public final class Sugar4jFormulator {
     for (int i : I) {
       for (int w : W) {
         k[i][w] = create(format("k_i%02d_w%02d", i, w));
+        res.add(k[i][w]);
       }
     }
+
+    return Collections.unmodifiableList(res);
   }
 
-  public List<Expression> generateVariables() {
+  private List<Expression> generateVariableDeclarations() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -258,12 +210,36 @@ public final class Sugar4jFormulator {
     return Collections.unmodifiableList(res);
   }
 
+  private void generateConstraints() {
+    this.constraint1 = generateConstraint1();
+    this.constraint2 = generateConstraint2();
+    this.constraint3 = generateConstraint3();
+    this.constraint4 = generateConstraint4();
+    this.constraint5 = generateConstraint5();
+    this.constraint6 = generateConstraint6();
+    this.constraint7 = generateConstraint7();
+    this.constraint8 = generateConstraint8();
+    this.constraint9 = generateConstraint9();
+
+    this.constraint11 = generateConstraint11();
+    this.constraint12 = generateConstraint12();
+    this.constraint13 = generateConstraint13();
+    this.constraint14 = generateConstraint14();
+  }
+
+  private void registerSoftConstraint(@NonNull Expression cons, int weight) {
+    if (!softConstraints.containsKey(weight)) {
+      softConstraints.put(weight, new ArrayList<>());
+    }
+    softConstraints.get(weight).add(cons);
+  }
+
   /**
    * C01:
    * 任意のスタッフi，任意の日dについて，スタッフiがd日目に勤めるシフトは1個以下である.
    * (1人のスタッフが1日に2個以上のシフトを勤めることはない)
    */
-  public List<Expression> generateConstraint1() {
+  private List<Expression> generateConstraint1() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -296,7 +272,7 @@ public final class Sugar4jFormulator {
    * 任意のスタッフi，最終日を除く任意の日d，任意のシフトt1，任意のシフトt2 \in R[t1]に対して，
    * [ スタッフiがd日目にシフトt1を勤め，更に(d + 1)日目にシフトt2を勤める ] ことは許されない.
    */
-  public List<Expression> generateConstraint2() {
+  private List<Expression> generateConstraint2() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -320,7 +296,7 @@ public final class Sugar4jFormulator {
    * 任意のスタッフi，任意のシフトtに対して，
    * スタッフiがシフトtを勤めることのできる最大回数M_MAX[i][t]が定められている.
    */
-  public List<Expression> generateConstraint3() {
+  private List<Expression> generateConstraint3() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -347,7 +323,7 @@ public final class Sugar4jFormulator {
    * C04:
    * 任意のスタッフiに対して， 総勤務時間の下限B_MIN[i]と上限B_MAX[i]が定められている.
    */
-  public List<Expression> generateConstraint4() {
+  private List<Expression> generateConstraint4() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -385,7 +361,7 @@ public final class Sugar4jFormulator {
    * 任意のスタッフiに対して，連続で勤務する日数の上限C_MAX[i]が定められている.
    * 任意の連続するC_MAX[i] + 1日間に関して，休暇の回数が1日以上であればよい
    */
-  public List<Expression> generateConstraint5() {
+  private List<Expression> generateConstraint5() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -414,7 +390,7 @@ public final class Sugar4jFormulator {
    * 任意の連続する(s + 2)日間について，
    * [その初日と最終日が休暇であり，その間は毎日勤務する]ことは許されない
    */
-  public List<Expression> generateConstraint6() {
+  private List<Expression> generateConstraint6() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -445,7 +421,7 @@ public final class Sugar4jFormulator {
    * すなわち，O_MIN[i]日未満の連続休暇は許されない
    * 制約はC06と同様に生成する
    */
-  public List<Expression> generateConstraint7() {
+  private List<Expression> generateConstraint7() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -478,7 +454,7 @@ public final class Sugar4jFormulator {
    * 制約C08L, C08Rは，変数k[i][w]をスタッフiが週末wを休暇にしないとき1
    * そうでないとき0にするための制約である
    */
-  public List<Expression> generateConstraint8() {
+  private List<Expression> generateConstraint8() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -526,7 +502,7 @@ public final class Sugar4jFormulator {
    * C09:
    * 任意のスタッフiに対し，スタッフiが勤務不能な日の集合N[i]が定められている.
    */
-  public List<Expression> generateConstraint9() {
+  private List<Expression> generateConstraint9() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -545,7 +521,7 @@ public final class Sugar4jFormulator {
    * 任意のスタッフi，任意の日d，任意のシフトtに対し，
    * スタッフiがd日目にシフトtで勤務しないときのペナルティQ[i][d][t]が定められている.
    */
-  public List<Expression> generateConstraint11() {
+  private List<Expression> generateConstraint11() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -558,9 +534,14 @@ public final class Sugar4jFormulator {
           Expression penalty = create(format("P_C11_i%02d_d%02d_t%02d", i, d, t));
           res.add(create(INT_DEFINITION, penalty, ZERO, ONE));
 
+          penaltyVariables.add(penalty);
+          penaltyVariableWeight.put(penalty, Q[i][d][t]);
+          penaltyVariableUpperBound.put(penalty, 1);
+
           Expression cons = create(OR, create(GE, x[i][d][t], ONE), create(GE, penalty, ONE));
           cons.setComment(format("C11_i%02d_d%02d_t%02d", i, d, t));
           res.add(cons);
+          registerSoftConstraint(cons, Q[i][d][t]);
         }
       }
     }
@@ -572,7 +553,7 @@ public final class Sugar4jFormulator {
    * C12: 任意のスタッフi，任意の日d，任意のシフトtに対し，
    * スタッフiがd日目にシフトtで勤務するときのペナルティP[i][d][t]が定められている.
    */
-  public List<Expression> generateConstraint12() {
+  private List<Expression> generateConstraint12() {
     List<Expression> res = new ArrayList<>();
 
     for (int i : I) {
@@ -585,9 +566,14 @@ public final class Sugar4jFormulator {
           Expression penalty = create(format("P_C12_i%02d_d%02d_t%02d", i, d, t));
           res.add(create(INT_DEFINITION, penalty, ZERO, ONE));
 
+          penaltyVariables.add(penalty);
+          penaltyVariableWeight.put(penalty, P[i][d][t]);
+          penaltyVariableUpperBound.put(penalty, 1);
+
           Expression cons = create(OR, create(LE, x[i][d][t], ZERO), create(GE, penalty, ONE));
           cons.setComment(format("C12_i%02d_d%02d_t%02d", i, d, t));
           res.add(cons);
+          registerSoftConstraint(cons, P[i][d][t]);
         }
       }
     }
@@ -599,7 +585,7 @@ public final class Sugar4jFormulator {
    * C13: 任意の日d，任意のシフトtに対し，適正スタッフ数U[d][t]が定められており，
    * それから1人不足するごとに与えられるペナルティV_MIN[d][t]が定められている.
    */
-  public List<Expression> generateConstraint13() {
+  private List<Expression> generateConstraint13() {
     List<Expression> res = new ArrayList<>();
 
     for (int d : D) {
@@ -611,6 +597,10 @@ public final class Sugar4jFormulator {
         Expression penalty = create(format("P_C13_d%02d_t%02d", d, t));
         res.add(create(INT_DEFINITION, penalty, ZERO, create(U[d][t])));
 
+        penaltyVariables.add(penalty);
+        penaltyVariableWeight.put(penalty, V_MIN[d][t]);
+        penaltyVariableUpperBound.put(penalty, U[d][t]);
+
         List<Expression> terms = new ArrayList<>();
         for (int i : I) {
           terms.add(x[i][d][t]);
@@ -620,6 +610,7 @@ public final class Sugar4jFormulator {
         Expression cons = create(GE, create(ADD, terms), create(U[d][t]));
         cons.setComment(format("C13_d%02d_t%02d", d, t));
         res.add(cons);
+        registerSoftConstraint(cons, V_MIN[d][t]);
       }
     }
 
@@ -631,7 +622,7 @@ public final class Sugar4jFormulator {
    * 任意の日d，任意のシフトtに対し，適正スタッフ数U[d][t]が定められており，
    * それを1人超過するごとに与えられるペナルティV_MAX[d][t]が定められている.
    */
-  public List<Expression> generateConstraint14() {
+  private List<Expression> generateConstraint14() {
     List<Expression> res = new ArrayList<>();
 
     for (int d : D) {
@@ -643,6 +634,10 @@ public final class Sugar4jFormulator {
         Expression penalty = create(format("P_C14_d%02d_t%02d", d, t));
         res.add(create(INT_DEFINITION, penalty, ZERO, create(I.length - U[d][t])));
 
+        penaltyVariables.add(penalty);
+        penaltyVariableWeight.put(penalty, V_MAX[d][t]);
+        penaltyVariableUpperBound.put(penalty, I.length - U[d][t]);
+
         List<Expression> terms = new ArrayList<>();
         for (int i : I) {
           terms.add(x[i][d][t]);
@@ -652,135 +647,210 @@ public final class Sugar4jFormulator {
         Expression cons = create(LE, create(ADD, terms), create(U[d][t]));
         cons.setComment(format("C14_d%02d_t%02d", d, t));
         res.add(cons);
+        registerSoftConstraint(cons, V_MAX[d][t]);
       }
     }
 
     return Collections.unmodifiableList(res);
   }
 
-  public List<Expression> generateAllConstraints() {
+  /*
+   * PUBLIC
+   */
+
+  public List<Expression> getVariables() {
+    return penaltyVariables;
+  }
+
+  public List<Expression> getPenaltyVariables() {
+    return penaltyVariables;
+  }
+
+  public Map<Expression, Integer> getPenaltyVariableWeight() {
+    return penaltyVariableWeight;
+  }
+
+  public Map<Expression, Integer> getPenaltyVariableUpperBound() {
+    return penaltyVariableUpperBound;
+  }
+
+  public List<Expression> getVariableDeclarations() {
+    return variableDeclarations;
+  }
+
+  public List<Expression> getConstraint1() {
+    return constraint1;
+  }
+
+  public List<Expression> getConstraint2() {
+    return constraint2;
+  }
+
+  public List<Expression> getConstraint3() {
+    return constraint3;
+  }
+
+  public List<Expression> getConstraint4() {
+    return constraint4;
+  }
+
+  public List<Expression> getConstraint5() {
+    return constraint5;
+  }
+
+  public List<Expression> getConstraint6() {
+    return constraint6;
+  }
+
+  public List<Expression> getConstraint7() {
+    return constraint7;
+  }
+
+  public List<Expression> getConstraint8() {
+    return constraint8;
+  }
+
+  public List<Expression> getConstraint9() {
+    return constraint9;
+  }
+
+  public List<Expression> getConstraint11() {
+    return constraint11;
+  }
+
+  public List<Expression> getConstraint12() {
+    return constraint12;
+  }
+
+  public List<Expression> getConstraint13() {
+    return constraint13;
+  }
+
+  public List<Expression> getConstraint14() {
+    return constraint14;
+  }
+
+  public List<Expression> getHardConstraints() {
     List<Expression> res = new ArrayList<>();
-    res.addAll(generateConstraint1());
-    res.addAll(generateConstraint2());
-    res.addAll(generateConstraint3());
-    res.addAll(generateConstraint4());
-    res.addAll(generateConstraint5());
-    res.addAll(generateConstraint6());
-    res.addAll(generateConstraint7());
-    res.addAll(generateConstraint8());
-    res.addAll(generateConstraint9());
-    res.addAll(generateConstraint11());
-    res.addAll(generateConstraint12());
-    res.addAll(generateConstraint13());
-    res.addAll(generateConstraint14());
+    res.addAll(getConstraint1());
+    res.addAll(getConstraint2());
+    res.addAll(getConstraint3());
+    res.addAll(getConstraint4());
+    res.addAll(getConstraint5());
+    res.addAll(getConstraint6());
+    res.addAll(getConstraint7());
+    res.addAll(getConstraint8());
+    res.addAll(getConstraint9());
     return Collections.unmodifiableList(res);
   }
 
-  @Value
-  private static class PenaltyVariable {
-    String name;
-    int weight;
-    int upperBound;
-  }
-
-  private List<PenaltyVariable> getPenaltyVariables() {
-    List<PenaltyVariable> res = new ArrayList<>();
-
-    for (int i : I) {
-      for (int d : D) {
-        for (int t = 1; t < T.length; t++) {
-          if (Q[i][d][t] == 0) {
-            continue;
-          }
-          String varName = format("P_C11_i%02d_d%02d_t%02d", i, d, t);
-          res.add(new PenaltyVariable(varName, Q[i][d][t], 1));
-        }
-      }
-    }
-
-    for (int i : I) {
-      for (int d : D) {
-        for (int t = 1; t < T.length; t++) {
-          if (P[i][d][t] == 0) {
-            continue;
-          }
-
-          String varName = format("P_C12_i%02d_d%02d_t%02d", i, d, t);
-          res.add(new PenaltyVariable(varName, P[i][d][t], 1));
-        }
-      }
-    }
-
-    for (int d : D) {
-      for (int t = 1; t < T.length; t++) {
-        if (V_MIN[d][t] == 0) {
-          continue;
-        }
-
-        String varName = format("P_C13_d%02d_t%02d", d, t);
-        res.add(new PenaltyVariable(varName, V_MIN[d][t], U[d][t]));
-      }
-    }
-
-    for (int d : D) {
-      for (int t = 1; t < T.length; t++) {
-        if (V_MAX[d][t] == 0) {
-          continue;
-        }
-
-        String varName = format("P_C14_d%02d_t%02d", d, t);
-        res.add(new PenaltyVariable(varName, V_MAX[d][t], I.length - U[d][t]));
-      }
-    }
-
+  public List<Expression> getSoftConstraints() {
+    List<Expression> res = new ArrayList<>();
+    res.addAll(getConstraint11());
+    res.addAll(getConstraint12());
+    res.addAll(getConstraint13());
+    res.addAll(getConstraint14());
     return Collections.unmodifiableList(res);
   }
 
-  private List<Expression> generateObjective(
-      String objName, List<PenaltyVariable> penaltyVariables) {
+  public List<Expression> getAllConstraints() {
+    List<Expression> res = new ArrayList<>();
+    res.addAll(getConstraint1());
+    res.addAll(getConstraint2());
+    res.addAll(getConstraint3());
+    res.addAll(getConstraint4());
+    res.addAll(getConstraint5());
+    res.addAll(getConstraint6());
+    res.addAll(getConstraint7());
+    res.addAll(getConstraint8());
+    res.addAll(getConstraint9());
+    res.addAll(getConstraint11());
+    res.addAll(getConstraint12());
+    res.addAll(getConstraint13());
+    res.addAll(getConstraint14());
+    return Collections.unmodifiableList(res);
+  }
+
+  public List<Expression> getHeavyConstraints() {
+    int maxWeight = 0;
+    for (int weight : softConstraints.keySet()) {
+      maxWeight = Math.max(maxWeight, weight);
+    }
+
+    return Collections.unmodifiableList(softConstraints.get(maxWeight));
+  }
+
+  public List<Expression> getLightConstraints() {
     List<Expression> res = new ArrayList<>();
 
-    int maxPena = 0;
-    for (PenaltyVariable v : penaltyVariables) {
-      maxPena += v.getWeight() * v.getUpperBound();
+    int maxWeight = 0;
+    for (int weight : softConstraints.keySet()) {
+      maxWeight = Math.max(maxWeight, weight);
+    }
+
+    for (int weight : softConstraints.keySet()) {
+      if (weight == maxWeight) {
+        continue;
+      }
+      res.addAll(softConstraints.get(weight));
+    }
+
+    return Collections.unmodifiableList(res);
+  }
+
+  private Map<Integer, List<Expression>> classifyByWeight(List<Expression> penaltyVariables) {
+    Map<Integer, List<Expression>> res = new HashMap<>();
+
+    for (Expression v : penaltyVariables) {
+      int weight = penaltyVariableWeight.get(v);
+      if (!res.containsKey(weight)) {
+        res.put(weight, new ArrayList<>());
+      }
+      res.get(weight).add(v);
+    }
+
+    return res;
+  }
+
+  private List<Expression> generateObjective(String objName, List<Expression> penaltyVariables) {
+    if (penaltyVariables.isEmpty()) {
+      return Arrays.asList();
+    }
+
+    List<Expression> res = new ArrayList<>();
+
+    int maxPenalty = 0;
+    for (Expression v : penaltyVariables) {
+      maxPenalty += penaltyVariableWeight.get(v) * penaltyVariableUpperBound.get(v);
     }
 
     Expression obj = create(objName);
-    res.add(create(INT_DEFINITION, obj, ZERO, create(maxPena)));
+    res.add(create(INT_DEFINITION, obj, ZERO, create(maxPenalty)));
     res.add(create(Expression.OBJECTIVE_DEFINITION, Expression.MINIMIZE, obj));
 
-    Map<Integer, List<PenaltyVariable>> group = new HashMap<>();
-    for (PenaltyVariable v : penaltyVariables) {
-      if (!group.containsKey(v.getWeight())) {
-        group.put(v.getWeight(), new ArrayList<>());
-      }
-      group.get(v.getWeight()).add(v);
-    }
-
+    Map<Integer, List<Expression>> group = classifyByWeight(penaltyVariables);
     for (int weight : group.keySet()) {
-      List<PenaltyVariable> vars = group.get(weight);
-
       int sum = 0;
-      for (PenaltyVariable v : vars) {
-        sum += v.getUpperBound();
+      for (Expression v : group.get(weight)) {
+        sum += penaltyVariableUpperBound.get(v);
       }
 
       Expression pena = create(format("%s_w%03d", objName, weight));
       res.add(create(INT_DEFINITION, pena, ZERO, create(sum)));
 
-      List<Expression> varExp = new ArrayList<>();
-      for (PenaltyVariable v : vars) {
-        varExp.add(create(v.getName()));
+      List<Expression> terms = new ArrayList<>();
+      for (Expression v : group.get(weight)) {
+        terms.add(v);
       }
 
-      res.add(create(Expression.EQ, pena, create(ADD, varExp)));
+      res.add(create(Expression.EQ, pena, create(ADD, terms)));
     }
 
-    List<Expression> varExp = new ArrayList<>();
+    List<Expression> terms = new ArrayList<>();
     for (int weight : group.keySet()) {
-      varExp.add(create(MUL, create(weight), create(format("%s_w%03d", objName, weight))));
+      terms.add(create(MUL, create(weight), create(format("%s_w%03d", objName, weight))));
     }
-    res.add(create(Expression.EQ, obj, create(ADD, varExp)));
+    res.add(create(Expression.EQ, obj, create(ADD, terms)));
 
     return Collections.unmodifiableList(res);
   }
@@ -789,11 +859,140 @@ public final class Sugar4jFormulator {
     return generateObjective("OBJ", getPenaltyVariables());
   }
 
+  public List<Expression> generateHeavyObjective(@NonNull String objName) {
+    Map<Integer, List<Expression>> group = classifyByWeight(penaltyVariables);
+
+    int maxWeight = 0;
+    for (int weight : group.keySet()) {
+      maxWeight = Math.max(maxWeight, weight);
+    }
+
+    List<Expression> heavyPeanaltyVariables = new ArrayList<>();
+    for (Expression v : penaltyVariables) {
+      if (penaltyVariableWeight.get(v) == maxWeight) {
+        heavyPeanaltyVariables.add(v);
+      }
+    }
+
+    int maxPenalty = 0;
+    for (Expression v : heavyPeanaltyVariables) {
+      maxPenalty += penaltyVariableUpperBound.get(v);
+    }
+
+    List<Expression> res = new ArrayList<>();
+    Expression obj = create(objName);
+    res.add(create(INT_DEFINITION, obj, ZERO, create(maxPenalty)));
+
+    List<Expression> terms = new ArrayList<>();
+    for (Expression v : heavyPeanaltyVariables) {
+      terms.add(v);
+    }
+    res.add(create(EQ, obj, create(ADD, terms)));
+    return Collections.unmodifiableList(res);
+  }
+
+  public List<Expression> generateLightObjective(@NonNull String objName) {
+    int maxWeight = 0;
+    for (Expression v : penaltyVariables) {
+      maxWeight = Math.max(maxWeight, penaltyVariableWeight.get(v));
+    }
+
+    List<Expression> lightPeanaltyVariables = new ArrayList<>();
+    for (Expression v : penaltyVariables) {
+      if (penaltyVariableWeight.get(v) != maxWeight) {
+        lightPeanaltyVariables.add(v);
+      }
+    }
+    return generateObjective(objName, lightPeanaltyVariables);
+  }
+
+  public int evaluateSolution(@NonNull Map<Expression, Integer> solution) {
+    for (int i : I) {
+      for (int d : D) {
+        for (int t : T) {
+          if (!solution.containsKey(x[i][d][t])) {
+            throw new IllegalArgumentException("Invalid Solution: " + solution);
+          }
+        }
+      }
+    }
+
+    int penalty = 0;
+
+    // C11
+    for (int i : I) {
+      for (int d : D) {
+        for (int t = 1; t < T.length; t++) {
+          if (Q[i][d][t] == 0) {
+            continue;
+          }
+
+          if (solution.get(x[i][d][t]) == 0) {
+            penalty += Q[i][d][t];
+          }
+        }
+      }
+    }
+
+    // C12
+    for (int i : I) {
+      for (int d : D) {
+        for (int t = 1; t < T.length; t++) {
+          if (P[i][d][t] == 0) {
+            continue;
+          }
+
+          if (solution.get(x[i][d][t]) == 1) {
+            penalty += P[i][d][t];
+          }
+        }
+      }
+    }
+
+    // C13
+    for (int d : D) {
+      for (int t = 1; t < T.length; t++) {
+        if (V_MIN[d][t] == 0) {
+          continue;
+        }
+
+        int sum = 0;
+        for (int i : I) {
+          sum += solution.get(x[i][d][t]);
+        }
+
+        if (sum < U[d][t]) {
+          penalty += V_MIN[d][t] * (U[d][t] - sum);
+        }
+      }
+    }
+
+    // C14
+    for (int d : D) {
+      for (int t = 1; t < T.length; t++) {
+        if (V_MAX[d][t] == 0) {
+          continue;
+        }
+
+        int sum = 0;
+        for (int i : I) {
+          sum += solution.get(x[i][d][t]);
+        }
+
+        if (sum > U[d][t]) {
+          penalty += V_MAX[d][t] * (sum - U[d][t]);
+        }
+      }
+    }
+
+    return penalty;
+  }
+
   public static void main(String[] args) throws Exception {
     Sugar4jFormulator formulator =
         new Sugar4jFormulator(SchedulingProblem.parse(new java.io.FileReader(args[0])));
 
-    for (Expression e : formulator.generateVariables()) {
+    for (Expression e : formulator.getVariableDeclarations()) {
       System.out.print(e);
       if (e.getComment() != null) {
         System.out.print(" ; " + e.getComment());
@@ -801,7 +1000,7 @@ public final class Sugar4jFormulator {
       System.out.println();
     }
 
-    for (Expression e : formulator.generateAllConstraints()) {
+    for (Expression e : formulator.getAllConstraints()) {
       System.out.print(e);
       if (e.getComment() != null) {
         System.out.print(" ; " + e.getComment());
@@ -810,6 +1009,22 @@ public final class Sugar4jFormulator {
     }
 
     for (Expression e : formulator.generateObjective()) {
+      System.out.print(e);
+      if (e.getComment() != null) {
+        System.out.print(" ; " + e.getComment());
+      }
+      System.out.println();
+    }
+
+    for (Expression e : formulator.generateHeavyObjective("_HEAVY")) {
+      System.out.print(e);
+      if (e.getComment() != null) {
+        System.out.print(" ; " + e.getComment());
+      }
+      System.out.println();
+    }
+
+    for (Expression e : formulator.generateLightObjective("_LIGHT")) {
       System.out.print(e);
       if (e.getComment() != null) {
         System.out.print(" ; " + e.getComment());
