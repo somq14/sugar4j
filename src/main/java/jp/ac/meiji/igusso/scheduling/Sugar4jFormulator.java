@@ -532,7 +532,9 @@ public final class Sugar4jFormulator {
           }
 
           Expression penalty = create(format("P_C11_i%02d_d%02d_t%02d", i, d, t));
-          res.add(create(INT_DEFINITION, penalty, ZERO, ONE));
+          Expression dec = create(INT_DEFINITION, penalty, ZERO, ONE);
+          res.add(dec);
+          registerSoftConstraint(dec, Q[i][d][t]);
 
           penaltyVariables.add(penalty);
           penaltyVariableWeight.put(penalty, Q[i][d][t]);
@@ -564,7 +566,9 @@ public final class Sugar4jFormulator {
           }
 
           Expression penalty = create(format("P_C12_i%02d_d%02d_t%02d", i, d, t));
-          res.add(create(INT_DEFINITION, penalty, ZERO, ONE));
+          Expression dec = create(INT_DEFINITION, penalty, ZERO, ONE);
+          registerSoftConstraint(dec, P[i][d][t]);
+          res.add(dec);
 
           penaltyVariables.add(penalty);
           penaltyVariableWeight.put(penalty, P[i][d][t]);
@@ -595,7 +599,9 @@ public final class Sugar4jFormulator {
         }
 
         Expression penalty = create(format("P_C13_d%02d_t%02d", d, t));
-        res.add(create(INT_DEFINITION, penalty, ZERO, create(U[d][t])));
+        Expression dec = create(INT_DEFINITION, penalty, ZERO, create(U[d][t]));
+        res.add(dec);
+        registerSoftConstraint(dec, V_MIN[d][t]);
 
         penaltyVariables.add(penalty);
         penaltyVariableWeight.put(penalty, V_MIN[d][t]);
@@ -632,7 +638,9 @@ public final class Sugar4jFormulator {
         }
 
         Expression penalty = create(format("P_C14_d%02d_t%02d", d, t));
-        res.add(create(INT_DEFINITION, penalty, ZERO, create(I.length - U[d][t])));
+        Expression dec = create(INT_DEFINITION, penalty, ZERO, create(I.length - U[d][t]));
+        res.add(dec);
+        registerSoftConstraint(dec, V_MAX[d][t]);
 
         penaltyVariables.add(penalty);
         penaltyVariableWeight.put(penalty, V_MAX[d][t]);
