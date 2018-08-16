@@ -8,11 +8,14 @@ import static jp.ac.meiji.igusso.scheduling.SchedulingProblem.Staff;
 
 import lombok.NonNull;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+// Java CHECKSTYLE:OFF MemberName
+// Java CHECKSTYLE:OFF AbbreviationAsWordInName
+// Java CHECKSTYLE:OFF LocalVariableName
 public final class SchedulingProblemParameter {
   private final SchedulingProblem problem;
 
@@ -241,3 +244,6 @@ public final class SchedulingProblemParameter {
     }
   }
 }
+// Java CHECKSTYLE:ON MemberName
+// Java CHECKSTYLE:ON AbbreviationAsWordInName
+// Java CHECKSTYLE:ON LocalVariableName
