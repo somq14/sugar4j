@@ -86,8 +86,8 @@ public final class Main {
 
   public static void encodeSugar(SchedulingProblem problem, Map<String, String> options)
       throws Exception {
-    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    Model model = spe.encode();
+    ModelFormulator mf = new ModelFormulator(problem);
+    Model model = mf.encode();
 
     Model2SugarTranslator translator = Model2SugarTranslator.newInstance();
     Sugar4j sugar4j = Sugar4j.newInstance(DummySolver.getInstance());
@@ -214,17 +214,8 @@ public final class Main {
       case "binary": {
         new BinaryMethod(options).solve(sp);
       } break;
-      case "incremental": {
-        new IncrementalMethod(options).solve(sp);
-      } break;
-      case "hybrid": {
-        new HybridMethod(options).solve(sp);
-      } break;
       case "2step": {
         new TwoStepMethod(options).solve(sp);
-      } break;
-      case "3step": {
-        new ThreeStepMethod(options).solve(sp);
       } break;
       case "encode": {
         encodeSugar(sp, options);
