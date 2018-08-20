@@ -44,46 +44,6 @@ public final class Main {
     return map;
   }
 
-  private static void solveWithScop(SchedulingProblem problem, Map<String, String> options)
-      throws Exception {
-    final int timeout =
-        options.containsKey("timeout") ? Integer.valueOf(options.get("timeout")) : -1;
-
-    log("Generating Constraints");
-    Scop4jFormulator formulator = new Scop4jFormulator(problem);
-    Scop4j scop4j = Scop4j.newInstance();
-    scop4j.addVariables(formulator.generateVariables());
-    scop4j.addConstraints(formulator.generateAllConstraints());
-    log("Done");
-
-    log("Searching");
-    scop4j.setTimeout(timeout);
-    final jp.ac.meiji.igusso.scop4j.Solution solution = scop4j.solve();
-    log("Done");
-    log("");
-
-    log("Scop Log");
-    List<String> logBody = Files.readAllLines(scop4j.getLogFile(), Charset.defaultCharset());
-    for (String line : logBody) {
-      log(line);
-    }
-    log("");
-
-    if (solution.getHardPenalty() > 0) {
-      log("Found No Feasible Solution");
-      return;
-    }
-
-    log("Solution");
-    for (jp.ac.meiji.igusso.scop4j.Variable variable : scop4j.getVariables()) {
-      log("%s = %s", variable.getName(), solution.getSolution().get(variable));
-    }
-    log("Penalty = %d", solution.getSoftPenalty());
-    log("Cpu Time = %d [ms]", solution.getCpuTime());
-    log("Cpu Time (Last Improved) = %d [ms]", solution.getLastImprovedCpuTime());
-    log("Done");
-  }
-
   public static void encodeSugar(SchedulingProblem problem, Map<String, String> options)
       throws Exception {
     ModelFormulator mf = new ModelFormulator(problem);
@@ -206,7 +166,7 @@ public final class Main {
 
     switch (args[1]) {
       case "scop": {
-        solveWithScop(sp, options);
+        new Scop4jMethod(options).solve(sp);
       } break;
       case "linear": {
         new LinearMethod(options).solve(sp);

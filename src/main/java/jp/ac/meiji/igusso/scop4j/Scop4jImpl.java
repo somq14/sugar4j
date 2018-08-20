@@ -34,7 +34,7 @@ final class Scop4jImpl implements Scop4j {
   @Getter private int verbose = 0;
   @Getter private int seed = new Random().nextInt(1000 * 1000);
   @Getter private int target = 0;
-  @Getter private int timeout = 600;
+  @Getter private int timeout = 0;
   @Getter private Path logFile = null;
 
   Scop4jImpl() {
@@ -154,10 +154,7 @@ final class Scop4jImpl implements Scop4j {
 
   @Override
   public void setTimeout(int timeout) {
-    if (timeout < 0) {
-      throw new IllegalArgumentException();
-    }
-    this.timeout = timeout;
+    this.timeout = Math.max(timeout, 0);
   }
 
   @Override
@@ -183,8 +180,10 @@ final class Scop4jImpl implements Scop4j {
     args.add("-seed");
     args.add(String.valueOf(seed));
 
-    args.add("-time");
-    args.add(String.valueOf(timeout));
+    if (timeout > 0) {
+      args.add("-time");
+      args.add(String.valueOf(timeout));
+    }
 
     if (target > 0) {
       args.add("-target");
