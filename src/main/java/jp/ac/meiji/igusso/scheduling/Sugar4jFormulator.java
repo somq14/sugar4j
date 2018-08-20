@@ -91,6 +91,7 @@ public final class Sugar4jFormulator {
   // Penalty Variables Info
   private Map<Expression, Integer> penaltyVariableWeight;
   private Map<Expression, Integer> penaltyVariableUpperBound;
+  private Map<Expression, List<Expression>> penaltyVariableConstraint;
   private Map<Integer, List<Expression>> softConstraints;
 
   public Sugar4jFormulator(@NonNull SchedulingProblem problem) {
@@ -103,6 +104,7 @@ public final class Sugar4jFormulator {
     this.penaltyVariables = new ArrayList<>();
     this.penaltyVariableWeight = new HashMap<>();
     this.penaltyVariableUpperBound = new HashMap<>();
+    this.penaltyVariableConstraint = new HashMap<>();
     this.softConstraints = new HashMap<>();
 
     generateConstraints();
@@ -110,6 +112,7 @@ public final class Sugar4jFormulator {
     this.penaltyVariables = Collections.unmodifiableList(penaltyVariables);
     this.penaltyVariableWeight = Collections.unmodifiableMap(penaltyVariableWeight);
     this.penaltyVariableUpperBound = Collections.unmodifiableMap(penaltyVariableUpperBound);
+    this.penaltyVariableConstraint = Collections.unmodifiableMap(penaltyVariableConstraint);
     this.softConstraints = Collections.unmodifiableMap(softConstraints);
   }
 
@@ -544,6 +547,8 @@ public final class Sugar4jFormulator {
           cons.setComment(format("C11_i%02d_d%02d_t%02d", i, d, t));
           res.add(cons);
           registerSoftConstraint(cons, Q[i][d][t]);
+
+          penaltyVariableConstraint.put(penalty, Arrays.asList(dec, cons));
         }
       }
     }
@@ -578,6 +583,8 @@ public final class Sugar4jFormulator {
           cons.setComment(format("C12_i%02d_d%02d_t%02d", i, d, t));
           res.add(cons);
           registerSoftConstraint(cons, P[i][d][t]);
+
+          penaltyVariableConstraint.put(penalty, Arrays.asList(dec, cons));
         }
       }
     }
@@ -617,6 +624,8 @@ public final class Sugar4jFormulator {
         cons.setComment(format("C13_d%02d_t%02d", d, t));
         res.add(cons);
         registerSoftConstraint(cons, V_MIN[d][t]);
+
+        penaltyVariableConstraint.put(penalty, Arrays.asList(dec, cons));
       }
     }
 
@@ -656,6 +665,8 @@ public final class Sugar4jFormulator {
         cons.setComment(format("C14_d%02d_t%02d", d, t));
         res.add(cons);
         registerSoftConstraint(cons, V_MAX[d][t]);
+
+        penaltyVariableConstraint.put(penalty, Arrays.asList(dec, cons));
       }
     }
 
@@ -680,6 +691,10 @@ public final class Sugar4jFormulator {
 
   public Map<Expression, Integer> getPenaltyVariableUpperBound() {
     return penaltyVariableUpperBound;
+  }
+
+  public Map<Expression, List<Expression>> getPenaltyVariableConstraint() {
+    return penaltyVariableConstraint;
   }
 
   public List<Expression> getVariableDeclarations() {

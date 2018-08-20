@@ -177,6 +177,9 @@ public final class Main {
       case "2step": {
         new TwoStepMethod(options).solve(sp);
       } break;
+      case "incremental": {
+        new IncrementalMethod(options).solve(sp);
+      } break;
       case "encode": {
         encodeSugar(sp, options);
       } break;
