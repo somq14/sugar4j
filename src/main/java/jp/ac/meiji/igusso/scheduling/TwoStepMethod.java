@@ -7,8 +7,8 @@ import jp.ac.meiji.igusso.sugar4j.Solution;
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.expression.Expression;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 public final class TwoStepMethod extends Sugar4jMethod {
   public TwoStepMethod(Map<String, String> options) {}
