@@ -21,6 +21,7 @@ public abstract class Sugar4jMethod {
     System.out.println("c " + String.format(format, objs));
   }
 
+  protected SchedulingProblem problem;
   protected Sugar4jFormulator formulator;
   protected Sugar4j sugar4j;
   protected Solution bestSolution;
@@ -32,6 +33,7 @@ public abstract class Sugar4jMethod {
   public Sugar4jMethod() {}
 
   private void initialize(SchedulingProblem problem) {
+    this.problem = problem;
     this.formulator = new Sugar4jFormulator(problem);
     this.sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
 

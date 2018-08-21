@@ -180,6 +180,9 @@ public final class Main {
       case "incremental": {
         new IncrementalMethod(options).solve(sp);
       } break;
+      case "hybrid": {
+        new HybridMethod(options).solve(sp);
+      } break;
       case "encode": {
         encodeSugar(sp, options);
       } break;
