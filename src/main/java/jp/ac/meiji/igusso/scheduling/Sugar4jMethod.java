@@ -55,12 +55,23 @@ public abstract class Sugar4jMethod {
   }
 
   protected final Solution invoke() throws SugarException {
-    return invoke(-1);
+    log("%dth SAT Solver Invocation", ++solveCount);
+    return sugar4j.solve();
   }
 
   protected final Solution invoke(long timeout) throws SugarException {
+    if (timeout < 0) {
+      return invoke();
+    }
+
     log("%dth SAT Solver Invocation", ++solveCount);
-    return sugar4j.solve();
+    long remainTime = timeout - (System.currentTimeMillis() - timerBegin) / 1000;
+    return sugar4j.solve(Math.max(1, remainTime));
+  }
+
+  protected final Solution invokeOnce(long timeout) throws SugarException {
+    log("%dth SAT Solver Invocation", ++solveCount);
+    return sugar4j.solve(timeout);
   }
 
   protected abstract void search() throws SugarException;

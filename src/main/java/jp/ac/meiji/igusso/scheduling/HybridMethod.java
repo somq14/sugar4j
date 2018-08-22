@@ -19,12 +19,19 @@ import java.util.Map;
 
 // Java CHECKSTYLE:OFF LocalVariableName
 public final class HybridMethod extends Sugar4jMethod {
+  private int scopTimeout = -1;
   private int timeout = -1;
 
   public HybridMethod(Map<String, String> options) {
+    if (options.containsKey("scopTimeout")) {
+      this.scopTimeout = Integer.valueOf(options.get("scopTimeout"));
+    }
     if (options.containsKey("timeout")) {
       this.timeout = Integer.valueOf(options.get("timeout"));
     }
+
+    log("timeout = %d", timeout);
+    log("scopTimeout = %d", scopTimeout);
   }
 
   @Override
@@ -40,7 +47,7 @@ public final class HybridMethod extends Sugar4jMethod {
     Scop4jFormulator scopFormulator = new Scop4jFormulator(problem);
     scop4j.addVariables(scopFormulator.generateVariables());
     scop4j.addConstraints(scopFormulator.generateAllConstraints());
-    scop4j.setTimeout(timeout);
+    scop4j.setTimeout(scopTimeout);
 
     log("Searching Solution...");
     final jp.ac.meiji.igusso.scop4j.Solution solution = scop4j.solve();
@@ -107,12 +114,16 @@ public final class HybridMethod extends Sugar4jMethod {
 
   private void improveSolution() throws SugarException {
     log("Searching First Solution...");
-    jp.ac.meiji.igusso.sugar4j.Solution sugarSolution = invoke();
+    jp.ac.meiji.igusso.sugar4j.Solution sugarSolution = invoke(timeout);
+    if (sugarSolution.isTimeout()) {
+      throw new SugarException("timeout!");
+    }
     if (!sugarSolution.isSat()) {
       log("UNSAT (Something Wrong Happend)");
       return;
     }
     bestSolution = sugarSolution;
+    log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
     log("Done");
 
     log("Sorting Light Constraints...");
@@ -155,8 +166,11 @@ public final class HybridMethod extends Sugar4jMethod {
       log("Done");
 
       log("Searching Initial Solution...");
-      sugarSolution = invoke();
+      sugarSolution = invoke(timeout);
 
+      if (sugarSolution.isTimeout()) {
+        throw new SugarException("timeout!");
+      }
       if (!sugarSolution.isSat()) {
         log("UNSAT (Something Wrong Happend)");
         return;
@@ -165,22 +179,28 @@ public final class HybridMethod extends Sugar4jMethod {
 
       int penalty = sugarSolution.getIntMap().get(penaltyVariable);
       log("Found %s = %d", penaltyVariable.stringValue(), penalty);
+      log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
 
       while (penalty > 0) {
         log("Search %s <= %d", penaltyVariable.stringValue(), penalty - 1);
         sugar4j.addAssumption(penaltyVariable, Comparator.LE, penalty - 1);
 
-        sugarSolution = invoke();
+        sugarSolution = invoke(timeout);
+        if (sugarSolution.isTimeout()) {
+          throw new SugarException("timeout!");
+        }
         if (!sugarSolution.isSat()) {
           log("Not Found");
           break;
         }
+        bestSolution = sugarSolution;
         penalty = sugarSolution.getIntMap().get(penaltyVariable);
         sugar4j.addConstraint(create(Expression.LE, penaltyVariable, create(penalty)));
         log("Found %s = %d", penaltyVariable.stringValue(), penalty);
-        bestSolution = sugarSolution;
+        log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
       }
       log("Complete To Improve %s = %d", penaltyVariable.stringValue(), penalty);
+      log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
 
       Expression penaltyBind = create(Expression.EQ, penaltyVariable, create(penalty));
       log("Add Constraint To Bind %s", penaltyBind.toString());

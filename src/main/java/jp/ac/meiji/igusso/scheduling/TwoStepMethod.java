@@ -11,7 +11,13 @@ import java.util.List;
 import java.util.Map;
 
 public final class TwoStepMethod extends Sugar4jMethod {
-  public TwoStepMethod(Map<String, String> options) {}
+  private long timeout = -1;
+
+  public TwoStepMethod(Map<String, String> options) {
+    if (options.containsKey("timeout")) {
+      this.timeout = Math.max(-1, Long.valueOf(options.get("timeout")));
+    }
+  }
 
   @Override
   protected void formulate() {
@@ -25,7 +31,10 @@ public final class TwoStepMethod extends Sugar4jMethod {
   protected void search() throws SugarException {
     log("-------------------------------- 1st STEP --------------------------------");
 
-    Solution solution = invoke();
+    Solution solution = invoke(timeout);
+    if (solution.isTimeout()) {
+      throw new SugarException("timeout!");
+    }
     if (!solution.isSat()) {
       log("UNSAT (There Is No Feasible Solution)");
       return;
@@ -39,8 +48,11 @@ public final class TwoStepMethod extends Sugar4jMethod {
       log("Search OBJ <= %d", ans1 - 1);
 
       sugar4j.addAssumption(obj1, Comparator.LE, ans1 - 1);
-      solution = invoke();
+      solution = invoke(timeout);
 
+      if (solution.isTimeout()) {
+        throw new SugarException("timeout!");
+      }
       if (!solution.isSat()) {
         log("Not Found");
         break;
@@ -61,8 +73,11 @@ public final class TwoStepMethod extends Sugar4jMethod {
 
     sugar4j.addConstraints(formulator.getLightConstraints());
     sugar4j.addConstraints(formulator.generateLightObjective("OBJ2"));
-    solution = invoke();
+    solution = invoke(timeout);
 
+    if (solution.isTimeout()) {
+      throw new SugarException("timeout!");
+    }
     if (!solution.isSat()) {
       log("UNSAT (There Is No Feasible Solution)");
       return;
@@ -77,8 +92,11 @@ public final class TwoStepMethod extends Sugar4jMethod {
       log("Search OBJ <= %d", ans2 - 1);
 
       sugar4j.addAssumption(obj2, Comparator.LE, ans2 - 1);
-      solution = invoke();
+      solution = invoke(timeout);
 
+      if (solution.isTimeout()) {
+        throw new SugarException("timeout!");
+      }
       if (!solution.isSat()) {
         log("Not Found");
         break;

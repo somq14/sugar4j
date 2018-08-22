@@ -13,7 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 public final class IncrementalMethod extends Sugar4jMethod {
-  public IncrementalMethod(Map<String, String> options) {}
+  private long timeout = -1;
+
+  public IncrementalMethod(Map<String, String> options) {
+    if (options.containsKey("timeout")) {
+      this.timeout = Math.max(-1, Long.valueOf(options.get("timeout")));
+    }
+  }
 
   @Override
   protected void formulate() {
@@ -24,8 +30,13 @@ public final class IncrementalMethod extends Sugar4jMethod {
   }
 
   private void optimizeHeavyConstraints() throws SugarException {
+    long timeoutBegin = System.currentTimeMillis();
+
     log("Searching Initial Solution...");
-    Solution solution = invoke();
+    Solution solution = invoke(timeout);
+    if (solution.isTimeout()) {
+      throw new SugarException("timeout!");
+    }
     if (!solution.isSat()) {
       log("UNSAT (There Is No Feasible Solution)");
       return;
@@ -39,8 +50,11 @@ public final class IncrementalMethod extends Sugar4jMethod {
     while (penalty > 0) {
       log("Searching %s <= %d", obj.stringValue(), penalty - 1);
       sugar4j.addAssumption(obj, Comparator.LE, penalty - 1);
-      solution = invoke();
+      solution = invoke(timeout);
 
+      if (solution.isTimeout()) {
+        throw new SugarException("timeout!");
+      }
       if (!solution.isSat()) {
         log("Not Found");
         break;
@@ -98,8 +112,11 @@ public final class IncrementalMethod extends Sugar4jMethod {
       log("Done");
 
       log("Searching Initial Solution...");
-      Solution solution = invoke();
+      Solution solution = invoke(timeout);
 
+      if (solution.isTimeout()) {
+        throw new SugarException("timeout!");
+      }
       if (!solution.isSat()) {
         log("UNSAT (Something Wrong Happend)");
         return;
@@ -108,22 +125,28 @@ public final class IncrementalMethod extends Sugar4jMethod {
 
       int penalty = solution.getIntMap().get(penaltyVariable);
       log("Found %s = %d", penaltyVariable.stringValue(), penalty);
+      log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
 
       while (penalty > 0) {
         log("Search %s <= %d", penaltyVariable.stringValue(), penalty - 1);
         sugar4j.addAssumption(penaltyVariable, Comparator.LE, penalty - 1);
 
-        solution = invoke();
+        solution = invoke(timeout);
+        if (solution.isTimeout()) {
+          throw new SugarException("timeout!");
+        }
         if (!solution.isSat()) {
           log("Not Found");
           break;
         }
+        bestSolution = solution;
         penalty = solution.getIntMap().get(penaltyVariable);
         sugar4j.addConstraint(create(Expression.LE, penaltyVariable, create(penalty)));
         log("Found %s = %d", penaltyVariable.stringValue(), penalty);
-        bestSolution = solution;
+        log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
       }
       log("Complete To Improve %s = %d", penaltyVariable.stringValue(), penalty);
+      log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
 
       Expression penaltyBind = create(Expression.EQ, penaltyVariable, create(penalty));
       log("Add Constraint To Bind %s", penaltyBind.toString());

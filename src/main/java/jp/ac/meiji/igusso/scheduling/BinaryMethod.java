@@ -10,15 +10,23 @@ import jp.kobe_u.sugar.expression.Expression;
 import java.util.Map;
 
 public final class BinaryMethod extends Sugar4jMethod {
+  private long timeout = -1;
 
-  public BinaryMethod(Map<String, String> options) {}
+  public BinaryMethod(Map<String, String> options) {
+    if (options.containsKey("timeout")) {
+      this.timeout = Math.max(-1, Long.valueOf(options.get("timeout")));
+    }
+  }
 
   @Override
   protected void search() throws SugarException {
     log("Seaching Initial Solution");
 
-    Solution solution = invoke();
+    Solution solution = invoke(timeout);
 
+    if (solution.isTimeout()) {
+      throw new SugarException("timeout!");
+    }
     if (!solution.isSat()) {
       log("UNSAT (There Is No Feasible Solution)");
       return;
@@ -38,8 +46,11 @@ public final class BinaryMethod extends Sugar4jMethod {
       sugar4j.addAssumption(obj, Comparator.LE, mid);
 
       log("Searching OBJ <= %d", mid);
-      solution = invoke();
+      solution = invoke(timeout);
 
+      if (solution.isTimeout()) {
+        throw new SugarException("timeout!");
+      }
       if (solution.isSat()) {
         ub = solution.getIntMap().get(obj);
         sugar4j.addConstraint(create(Expression.LE, obj, create(ub)));
