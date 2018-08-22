@@ -22,6 +22,8 @@ import jp.kobe_u.sugar.expression.Expression;
 import lombok.NonNull;
 import lombok.Value;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -463,27 +465,21 @@ public final class Sugar4jFormulator {
     for (int i : I) {
       for (int w : W) {
         {
-          Expression cons = create(OR, create(GE, x[i][7 * w + 5][0], ONE),
-              create(GE, x[i][7 * w + 6][0], ONE), create(GE, k[i][w], ONE));
+          Expression cons = create(OR, create(LE, x[i][7 * w + 5][0], ZERO),
+              create(LE, x[i][7 * w + 6][0], ZERO), create(LE, k[i][w], ZERO));
           cons.setComment(format("C08A_i%02d_w%d", i, w));
           res.add(cons);
         }
         {
-          Expression cons = create(OR, create(GE, x[i][7 * w + 5][0], ONE),
-              create(LE, x[i][7 * w + 6][0], ZERO), create(GE, k[i][w], ONE));
+          Expression cons =
+              create(OR, create(GE, x[i][7 * w + 5][0], ONE), create(GE, k[i][w], ONE));
           cons.setComment(format("C08B_i%02d_w%d", i, w));
           res.add(cons);
         }
         {
-          Expression cons = create(OR, create(LE, x[i][7 * w + 5][0], ZERO),
-              create(GE, x[i][7 * w + 6][0], ONE), create(GE, k[i][w], ONE));
+          Expression cons =
+              create(OR, create(GE, x[i][7 * w + 6][0], ONE), create(GE, k[i][w], ONE));
           cons.setComment(format("C08C_i%02d_w%d", i, w));
-          res.add(cons);
-        }
-        {
-          Expression cons = create(OR, create(LE, x[i][7 * w + 5][0], ZERO),
-              create(LE, x[i][7 * w + 6][0], ZERO), create(LE, k[i][w], ZERO));
-          cons.setComment(format("C08D_i%02d_w%d", i, w));
           res.add(cons);
         }
       }
@@ -1011,49 +1007,59 @@ public final class Sugar4jFormulator {
     return penalty;
   }
 
+  @Override
+  public String toString() {
+    StringWriter stringWriter = new StringWriter();
+    PrintWriter out = new PrintWriter(stringWriter);
+
+    for (Expression e : getVariableDeclarations()) {
+      out.print(e);
+      if (e.getComment() != null) {
+        out.print(" ; " + e.getComment());
+      }
+      out.println();
+    }
+
+    for (Expression e : getAllConstraints()) {
+      out.print(e);
+      if (e.getComment() != null) {
+        out.print(" ; " + e.getComment());
+      }
+      out.println();
+    }
+
+    for (Expression e : generateObjective()) {
+      out.print(e);
+      if (e.getComment() != null) {
+        out.print(" ; " + e.getComment());
+      }
+      out.println();
+    }
+
+    for (Expression e : generateHeavyObjective("_HEAVY")) {
+      out.print(e);
+      if (e.getComment() != null) {
+        out.print(" ; " + e.getComment());
+      }
+      out.println();
+    }
+
+    for (Expression e : generateLightObjective("_LIGHT")) {
+      out.print(e);
+      if (e.getComment() != null) {
+        out.print(" ; " + e.getComment());
+      }
+      out.println();
+    }
+
+    out.flush();
+    return stringWriter.toString();
+  }
+
   public static void main(String[] args) throws Exception {
     Sugar4jFormulator formulator =
         new Sugar4jFormulator(SchedulingProblem.parse(new java.io.FileReader(args[0])));
-
-    for (Expression e : formulator.getVariableDeclarations()) {
-      System.out.print(e);
-      if (e.getComment() != null) {
-        System.out.print(" ; " + e.getComment());
-      }
-      System.out.println();
-    }
-
-    for (Expression e : formulator.getAllConstraints()) {
-      System.out.print(e);
-      if (e.getComment() != null) {
-        System.out.print(" ; " + e.getComment());
-      }
-      System.out.println();
-    }
-
-    for (Expression e : formulator.generateObjective()) {
-      System.out.print(e);
-      if (e.getComment() != null) {
-        System.out.print(" ; " + e.getComment());
-      }
-      System.out.println();
-    }
-
-    for (Expression e : formulator.generateHeavyObjective("_HEAVY")) {
-      System.out.print(e);
-      if (e.getComment() != null) {
-        System.out.print(" ; " + e.getComment());
-      }
-      System.out.println();
-    }
-
-    for (Expression e : formulator.generateLightObjective("_LIGHT")) {
-      System.out.print(e);
-      if (e.getComment() != null) {
-        System.out.print(" ; " + e.getComment());
-      }
-      System.out.println();
-    }
+    System.out.println(formulator);
   }
 }
 // Java CHECKSTYLE:ON MemberName
