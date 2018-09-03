@@ -107,10 +107,6 @@ public final class TwoStepMethod extends Sugar4jMethod {
       log("Found OBJ = %d", ans2);
       bestSolution = solution;
     }
-
-    Expression obj2Bind = create(Expression.LE, obj2, create(ans2));
-    log("Add Constraint: %s", obj2Bind.toString());
-    sugar4j.addConstraint(obj2Bind);
     log("Done");
   }
 }

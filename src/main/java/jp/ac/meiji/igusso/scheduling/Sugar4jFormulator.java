@@ -674,7 +674,7 @@ public final class Sugar4jFormulator {
    */
 
   public List<Expression> getVariables() {
-    return penaltyVariables;
+    return variables;
   }
 
   public List<Expression> getPenaltyVariables() {
