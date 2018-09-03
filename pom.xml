@@ -4,7 +4,7 @@
   <groupId>jp.ac.meiji.igusso.coptool</groupId>
   <artifactId>coptool</artifactId>
   <packaging>jar</packaging>
-  <version>0.4</version>
+  <version>0.5</version>
   <name>coptool</name>
   <url>http://maven.apache.org</url>
 
