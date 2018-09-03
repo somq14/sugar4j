@@ -45,7 +45,7 @@ public class SchedulingProblemParser {
         line++;
       } while (COMMENT_PATTERN.matcher(cur).matches());
     } catch (IOException ex) {
-      throw new SchedulingProblemParseException(ex);
+      throw new SchedulingProblemException(ex);
     }
   }
 
@@ -58,7 +58,7 @@ public class SchedulingProblemParser {
   private void parseSectionHorizon() {
     skipEmptyLines();
     if (!cur.equals("SECTION_HORIZON")) {
-      throw new SchedulingProblemParseException("SECTION_HORIZON not found: " + line);
+      throw new SchedulingProblemException("SECTION_HORIZON not found: " + line);
     }
     nextLine();
 
@@ -69,7 +69,7 @@ public class SchedulingProblemParser {
   private void parseSectionShifts() {
     skipEmptyLines();
     if (!cur.equals("SECTION_SHIFTS")) {
-      throw new SchedulingProblemParseException("SECTION_SHIFTS not found: " + line);
+      throw new SchedulingProblemException("SECTION_SHIFTS not found: " + line);
     }
     nextLine();
 
@@ -93,7 +93,7 @@ public class SchedulingProblemParser {
   private void parseSectionStaff() {
     skipEmptyLines();
     if (!cur.equals("SECTION_STAFF")) {
-      throw new SchedulingProblemParseException("SECTION_STAFF not found: " + line);
+      throw new SchedulingProblemException("SECTION_STAFF not found: " + line);
     }
     nextLine();
 
@@ -127,7 +127,7 @@ public class SchedulingProblemParser {
   private void parseSectionDaysOff() {
     skipEmptyLines();
     if (!cur.equals("SECTION_DAYS_OFF")) {
-      throw new SchedulingProblemParseException("SECTION_DAYS_OFF not found: " + line);
+      throw new SchedulingProblemException("SECTION_DAYS_OFF not found: " + line);
     }
     nextLine();
 
@@ -151,7 +151,7 @@ public class SchedulingProblemParser {
   private void parseSectionShiftOnRequests() {
     skipEmptyLines();
     if (!cur.equals("SECTION_SHIFT_ON_REQUESTS")) {
-      throw new SchedulingProblemParseException("SECTION_SHIFT_ON_REQUESTS not found: " + line);
+      throw new SchedulingProblemException("SECTION_SHIFT_ON_REQUESTS not found: " + line);
     }
     nextLine();
 
@@ -174,7 +174,7 @@ public class SchedulingProblemParser {
   private void parseSectionShiftOffRequests() {
     skipEmptyLines();
     if (!cur.equals("SECTION_SHIFT_OFF_REQUESTS")) {
-      throw new SchedulingProblemParseException("SECTION_SHIFT_OFF_REQUESTS not found: " + line);
+      throw new SchedulingProblemException("SECTION_SHIFT_OFF_REQUESTS not found: " + line);
     }
     nextLine();
 
@@ -197,7 +197,7 @@ public class SchedulingProblemParser {
   private void parseSectionCover() {
     skipEmptyLines();
     if (!cur.equals("SECTION_COVER")) {
-      throw new SchedulingProblemParseException("SECTION_SHIFT_OFF_REQUESTS not found: " + line);
+      throw new SchedulingProblemException("SECTION_SHIFT_OFF_REQUESTS not found: " + line);
     }
     nextLine();
 
@@ -218,7 +218,7 @@ public class SchedulingProblemParser {
     problemBuilder.cover(cover);
   }
 
-  public SchedulingProblem parse() throws SchedulingProblemParseException {
+  public SchedulingProblem parse() throws SchedulingProblemException {
     if (created) {
       return problemBuilder.build();
     }
@@ -231,10 +231,10 @@ public class SchedulingProblemParser {
       parseSectionShiftOnRequests();
       parseSectionShiftOffRequests();
       parseSectionCover();
-    } catch (SchedulingProblemParseException sex) {
+    } catch (SchedulingProblemException sex) {
       throw sex;
     } catch (Exception ex) {
-      throw new SchedulingProblemParseException(ex);
+      throw new SchedulingProblemException(ex);
     }
 
     created = true;

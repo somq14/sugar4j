@@ -1,301 +1,223 @@
 package jp.ac.meiji.igusso.scheduling;
 
-import static jp.ac.meiji.igusso.scheduling.Main.log;
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import jp.ac.meiji.igusso.coptool.model.Constraint;
-import jp.ac.meiji.igusso.coptool.model.Model;
-import jp.ac.meiji.igusso.coptool.model.Variable;
-import jp.ac.meiji.igusso.coptool.sat.IpasirSolver;
-import jp.ac.meiji.igusso.coptool.scop.Model2ScopTranslator;
-import jp.ac.meiji.igusso.coptool.scop.Scop4j;
-import jp.ac.meiji.igusso.coptool.sugar.Comparator;
-import jp.ac.meiji.igusso.coptool.sugar.Model2SugarTranslator;
-import jp.ac.meiji.igusso.coptool.sugar.Sugar4j;
-import jp.ac.meiji.igusso.scheduling.SchedulingProblem;
-import jp.ac.meiji.igusso.scheduling.SchedulingProblemEncoder;
+import jp.ac.meiji.igusso.scop4j.Constraint;
+import jp.ac.meiji.igusso.scop4j.Scop4j;
+import jp.ac.meiji.igusso.scop4j.Variable;
+import jp.ac.meiji.igusso.sugar4j.Comparator;
+import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.expression.Expression;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-final class HybridMethod {
-  private Model model;
-  private List<Constraint> hardConstraints;
-  private List<Constraint> heavyConstraints;
-  private List<Constraint> lightConstraints;
+// Java CHECKSTYLE:OFF LocalVariableName
+public final class HybridMethod extends Sugar4jMethod {
+  private int scopTimeout = -1;
+  private int timeout = -1;
 
-  private Model2ScopTranslator scopTranslator;
-  private Scop4j scop4j;
-
-  private Model2SugarTranslator sugarTranslator;
-  private Sugar4j sugar4j;
-
-  private jp.ac.meiji.igusso.coptool.sugar.Solution bestSolution;
-
-  private int solveCount;
-  private long timerBegin;
-  private long timerEnd;
-
-  private int scopTimeout = 60;
-
-  HybridMethod(Map<String, String> options) {
-    if (options.containsKey("scop_timeout")) {
-      scopTimeout = Integer.valueOf(options.get("scop_timeout"));
+  public HybridMethod(Map<String, String> options) {
+    if (options.containsKey("scopTimeout")) {
+      this.scopTimeout = Integer.valueOf(options.get("scopTimeout"));
     }
+    if (options.containsKey("timeout")) {
+      this.timeout = Integer.valueOf(options.get("timeout"));
+    }
+
+    log("timeout = %d", timeout);
+    log("scopTimeout = %d", scopTimeout);
   }
 
-  private void setup(SchedulingProblem problem) {
-    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    model = spe.encode();
-
-    scopTranslator = Model2ScopTranslator.newInstance();
-    scop4j = Scop4j.newInstance();
-
-    sugarTranslator = Model2SugarTranslator.newInstance();
-    sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
-
-    log("Classifying Constraints By Weight...");
-    int maxWeight = 0;
-    for (Constraint constraint : model.getConstraints()) {
-      if (constraint.isSoft()) {
-        maxWeight = Math.max(maxWeight, constraint.getWeight());
-      }
-    }
-
-    hardConstraints = new ArrayList<>();
-    heavyConstraints = new ArrayList<>();
-    lightConstraints = new ArrayList<>();
-    for (Constraint constraint : model.getConstraints()) {
-      if (constraint.isHard()) {
-        hardConstraints.add(constraint);
-        continue;
-      }
-      if (constraint.getWeight() >= maxWeight) {
-        heavyConstraints.add(constraint);
-      } else {
-        lightConstraints.add(constraint);
-      }
-    }
-    Collections.sort(
-        lightConstraints, (c1, c2) -> (Integer.compare(c1.getWeight(), c2.getWeight())));
-    Collections.reverse(lightConstraints);
-
-    log("Maximum Weight = %d", maxWeight);
-    log("Hard  Constraint Count = %d", hardConstraints.size());
-    log("Heavy Constraint Count = %d", heavyConstraints.size());
-    log("Light Constraint Count = %d", lightConstraints.size());
-    log("Done");
+  @Override
+  protected void formulate() {
+    sugar4j.addExpressions(formulator.getVariableDeclarations());
+    sugar4j.addConstraints(formulator.getHardConstraints());
+    sugar4j.addConstraints(formulator.getHeavyConstraints());
+    sugar4j.addConstraints(formulator.generateHeavyObjective("OBJ_HEAVY"));
   }
 
-  private void translateModel() {
-    log("Translating Constraints For SCOP...");
-    scopTranslator = Model2ScopTranslator.newInstance();
-    for (Variable variable : model.getVariables()) {
-      scop4j.addVariable(scopTranslator.translate(variable));
-    }
-    for (Constraint constraint : model.getConstraints()) {
-      scop4j.addConstraint(scopTranslator.translate(constraint));
-    }
-    log("Done");
-
-    log("Translating Constraints For Sugar...");
-    for (Variable variable : model.getVariables()) {
-      sugar4j.addExpressions(sugarTranslator.translate(variable));
-    }
-    for (Constraint constraint : hardConstraints) {
-      sugar4j.addConstraints(sugarTranslator.translate(constraint));
-    }
-    for (Constraint constraint : heavyConstraints) {
-      sugar4j.addConstraints(sugarTranslator.translate(constraint));
-    }
-
-    // generate objective variable _P
-    int maxPenaltyOfHeavyConstraints = 0;
-    List<Expression> terms = new ArrayList<>();
-    for (Constraint constraint : heavyConstraints) {
-      terms.add(sugarTranslator.getPenaltyVariableOf(constraint));
-      maxPenaltyOfHeavyConstraints += constraint.getPenaltyUpperBound();
-    }
-    sugar4j.addIntVariable("_P", 0, maxPenaltyOfHeavyConstraints);
-    sugar4j.addConstraint(create(Expression.EQ, create("_P"), create(Expression.ADD, terms)));
-    log("Done");
-  }
-
-  private void encodeConstraints() throws Exception {
-    log("Encoding Constraints...");
-
-    sugar4j.update();
-
-    log("Done");
-  }
-
-  private void searchSolution() throws Exception {
-    timerBegin = System.currentTimeMillis();
-
-    log("---------------- Search Initial Solution With SCOP ----------------");
-    log("Searching Initial Solution With SCOP...");
-
+  private void searchInitialSolution(SchedulingProblem problem) throws SugarException {
+    Scop4j scop4j = Scop4j.newInstance();
+    Scop4jFormulator scopFormulator = new Scop4jFormulator(problem);
+    scop4j.addVariables(scopFormulator.generateVariables());
+    scop4j.addConstraints(scopFormulator.generateAllConstraints());
     scop4j.setTimeout(scopTimeout);
-    final jp.ac.meiji.igusso.coptool.scop.Solution scopSolution = scop4j.solve();
+
+    log("Searching Solution...");
+    final jp.ac.meiji.igusso.scop4j.Solution solution = scop4j.solve();
     log("Done");
+    log("");
 
     log("Scop Log");
-    List<String> logBody = Files.readAllLines(scop4j.getLogFile(), Charset.defaultCharset());
-    for (String line : logBody) {
-      log(line);
+    try {
+      List<String> logBody = Files.readAllLines(scop4j.getLogFile(), Charset.defaultCharset());
+      for (String line : logBody) {
+        log(line);
+      }
+    } catch (IOException ex) {
+      ex.printStackTrace();
     }
     log("Done");
+    log("");
 
-    if (scopSolution.getHardPenalty() > 0) {
+    if (solution.getHardPenalty() > 0) {
       log("Found No Feasible Solution");
       return;
     }
 
     log("Scop Solution");
-    for (Variable variable : model.getVariables()) {
-      log("%s = %s", variable.getName(),
-          scopSolution.getSolution().get(scopTranslator.translate(variable)));
+    for (Variable variable : scopFormulator.generateVariables()) {
+      log("%s = %s", variable.getName(), solution.getSolution().get(variable));
     }
-    log("Penalty = %d", scopSolution.getSoftPenalty());
-    log("Cpu Time = %d [ms]", scopSolution.getCpuTime());
-    log("Cpu Time (Last Improved) = %d [ms]", scopSolution.getLastImprovedCpuTime());
-
-    int scopHeavyConstraintViolation = 0;
-    for (Constraint constraint : heavyConstraints) {
-      Map<jp.ac.meiji.igusso.coptool.scop.Constraint, Integer> violatedMap =
-          scopSolution.getViolatedConstraints();
-      if (violatedMap.containsKey(scopTranslator.translate(constraint))) {
-        scopHeavyConstraintViolation += violatedMap.get(scopTranslator.translate(constraint));
-      }
-    }
-    log("Scop Violates Heavy Constraints %d Times", scopHeavyConstraintViolation);
-
-    log("Done");
-
-    log("---------------- Improve Solution With SAT Solver ----------------");
-
-    log("Add Constraint About SCOP's Solution");
-    Expression heavyBoundConstraint =
-        create(Expression.LE, create("_P"), create(scopHeavyConstraintViolation));
-    log("(%s)", heavyBoundConstraint.toString());
-    sugar4j.addConstraint(heavyBoundConstraint);
-    log("Done");
+    log("Penalty = %d", solution.getSoftPenalty());
+    log("Cpu Time = %d [ms]", solution.getCpuTime());
+    log("Cpu Time (Last Improved) = %d [ms]", solution.getLastImprovedCpuTime());
+    log("");
 
     log("Add SCOP Solution To SAT Solver As Assumtion...");
-    for (Variable variable : model.getVariables()) {
-      if (!variable.getName().startsWith("x_")) {
-        continue;
+    int maxWeight = 0;
+    for (Constraint cons : scopFormulator.generateAllConstraints()) {
+      if (cons.isSoft()) {
+        maxWeight = Math.max(maxWeight, cons.getWeight());
       }
-      int scopValue =
-          Integer.valueOf(scopSolution.getSolution().get(scopTranslator.translate(variable)));
-      sugar4j.addAssumption(create(variable.getName()), Comparator.EQ, scopValue);
+    }
+
+    int violation = 0;
+    for (Constraint cons : scopFormulator.generateAllConstraints()) {
+      if (cons.isSoft() && cons.getWeight() == maxWeight
+          && solution.getViolatedConstraints().containsKey(cons)) {
+        violation += solution.getViolatedConstraints().get(cons);
+      }
+    }
+    sugar4j.addExpression(create(Expression.LE, create("OBJ_HEAVY"), create(violation)));
+
+    SchedulingProblemParameter param = new SchedulingProblemParameter(problem);
+    int[] I = param.getI();
+    int[] D = param.getD();
+    int[] T = param.getT();
+    for (int i : I) {
+      for (int d : D) {
+        int t = Integer.valueOf(solution.getSolution().get(
+            Variable.of(String.format("x_i%02d_d%02d", i, d), T.length)));
+        sugar4j.addAssumption(
+            create(String.format("x_i%02d_d%02d_t%02d", i, d, t)), Comparator.EQ, 1);
+      }
     }
     log("Done");
+  }
 
+  private void improveSolution() throws SugarException {
     log("Searching First Solution...");
-    solveCount = 0;
-    bestSolution = null;
-
-    jp.ac.meiji.igusso.coptool.sugar.Solution sugarSolution = sugar4j.solve();
-    solveCount++;
+    jp.ac.meiji.igusso.sugar4j.Solution sugarSolution = invoke(timeout);
+    if (sugarSolution.isTimeout()) {
+      throw new SugarException("timeout!");
+    }
     if (!sugarSolution.isSat()) {
       log("UNSAT (Something Wrong Happend)");
       return;
     }
     bestSolution = sugarSolution;
+    log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
     log("Done");
 
-    for (Constraint constraint : lightConstraints) {
-      log("Adding Constraint  (Name = %s, Weight = %d)", constraint.getName(),
-          constraint.getWeight());
-      sugar4j.addConstraints(sugarTranslator.translate(constraint));
+    log("Sorting Light Constraints...");
+    final List<Expression> penaltyVariables = new ArrayList<>(formulator.getPenaltyVariables());
+    final Map<Expression, Integer> penaltyVariableWeight = formulator.getPenaltyVariableWeight();
+    final Map<Expression, List<Expression>> penaltyVariableConstraint =
+        formulator.getPenaltyVariableConstraint();
+
+    Collections.sort(penaltyVariables, new java.util.Comparator<Expression>() {
+      @Override
+      public int compare(Expression v1, Expression v2) {
+        int w1 = penaltyVariableWeight.get(v1);
+        int w2 = penaltyVariableWeight.get(v2);
+        if (w1 > w2) {
+          return 1;
+        }
+        if (w1 < w2) {
+          return -1;
+        }
+        return 0;
+      }
+    });
+    Collections.reverse(penaltyVariables);
+
+    int maxWeight = 0;
+    for (Expression v : formulator.getPenaltyVariables()) {
+      maxWeight = Math.max(maxWeight, penaltyVariableWeight.get(v));
+    }
+    log("Done");
+
+    for (Expression penaltyVariable : penaltyVariables) {
+      int weight = penaltyVariableWeight.get(penaltyVariable);
+      if (weight == maxWeight) {
+        continue;
+      }
+
+      log("Adding Constraint (Name = %s, Weight = %d)", penaltyVariable.stringValue(),
+          penaltyVariableWeight.get(penaltyVariable));
+      sugar4j.addConstraints(penaltyVariableConstraint.get(penaltyVariable));
       log("Done");
 
       log("Searching Initial Solution...");
-      sugarSolution = sugar4j.solve();
-      solveCount++;
+      sugarSolution = invoke(timeout);
 
+      if (sugarSolution.isTimeout()) {
+        throw new SugarException("timeout!");
+      }
       if (!sugarSolution.isSat()) {
         log("UNSAT (Something Wrong Happend)");
         return;
       }
       bestSolution = sugarSolution;
 
-      Expression penaltyVariable = sugarTranslator.getPenaltyVariableOf(constraint);
       int penalty = sugarSolution.getIntMap().get(penaltyVariable);
-      log("Found Penalty = %d", penalty);
+      log("Found %s = %d", penaltyVariable.stringValue(), penalty);
+      log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
 
       while (penalty > 0) {
-        log("Search Penalty <= %d", penalty - 1);
+        log("Search %s <= %d", penaltyVariable.stringValue(), penalty - 1);
         sugar4j.addAssumption(penaltyVariable, Comparator.LE, penalty - 1);
 
-        sugarSolution = sugar4j.solve();
-        solveCount++;
+        sugarSolution = invoke(timeout);
+        if (sugarSolution.isTimeout()) {
+          throw new SugarException("timeout!");
+        }
         if (!sugarSolution.isSat()) {
           log("Not Found");
           break;
         }
+        bestSolution = sugarSolution;
         penalty = sugarSolution.getIntMap().get(penaltyVariable);
         sugar4j.addConstraint(create(Expression.LE, penaltyVariable, create(penalty)));
-        log("Found Penalty = %d", penalty);
-        bestSolution = sugarSolution;
+        log("Found %s = %d", penaltyVariable.stringValue(), penalty);
+        log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
       }
-      log("Complete To Improve Penalty = %d", penalty);
+      log("Complete To Improve %s = %d", penaltyVariable.stringValue(), penalty);
+      log("OBJ = %d", formulator.evaluateSolution(bestSolution.getIntMap()));
 
       Expression penaltyBind = create(Expression.EQ, penaltyVariable, create(penalty));
       log("Add Constraint To Bind %s", penaltyBind.toString());
       sugar4j.addConstraint(penaltyBind);
-      log("Done", penaltyBind.toString());
+      log("Done");
     }
-    timerEnd = System.currentTimeMillis();
   }
 
-  void displaySolution() {
-    log("Solution");
-    for (Variable variable : model.getVariables()) {
-      log("%s = %d", variable.getName(), bestSolution.getIntMap().get(create(variable.getName())));
-    }
+  @Override
+  protected void search() throws SugarException {
+    log("---------------- Search Initial Solution With SCOP ----------------");
+    searchInitialSolution(problem);
+    log("Done");
 
-    log("");
-    log("Penalty (weight)");
-    int sumOfPenalty = 0;
-    for (Constraint constraint : model.getConstraints()) {
-      if (constraint.isHard()) {
-        continue;
-      }
-      log("%s (%d) = %d", constraint.getName(), constraint.getWeight(),
-          bestSolution.getIntMap().get(sugarTranslator.getPenaltyVariableOf(constraint)));
-      sumOfPenalty += constraint.getWeight()
-          * bestSolution.getIntMap().get(sugarTranslator.getPenaltyVariableOf(constraint));
-    }
-    log("");
-
-    log("Optimum Found OBJ = %d", sumOfPenalty);
-    log("Solve Count = %d", solveCount);
-    log("Cpu Time = %d [ms]", (timerEnd - timerBegin));
-  }
-
-  void solve(SchedulingProblem problem) throws Exception {
-    setup(problem);
-    translateModel();
-    encodeConstraints();
-
-    Thread hook = new Thread() {
-      @Override
-      public void run() {
-        timerEnd = System.currentTimeMillis();
-      }
-    };
-    Runtime.getRuntime().addShutdownHook(hook);
-    searchSolution();
-    Runtime.getRuntime().removeShutdownHook(hook);
-
-    displaySolution();
+    log("---------------- Improve Solution With SAT Solver ----------------");
+    improveSolution();
+    log("Done");
   }
 }
+// Java CHECKSTYLE:ON LocalVariableName

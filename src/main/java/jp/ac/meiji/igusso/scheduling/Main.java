@@ -1,14 +1,14 @@
 package jp.ac.meiji.igusso.scheduling;
 
-import jp.ac.meiji.igusso.coptool.model.Constraint;
-import jp.ac.meiji.igusso.coptool.model.Model;
-import jp.ac.meiji.igusso.coptool.model.Variable;
-import jp.ac.meiji.igusso.coptool.sat.IpasirSolver;
-import jp.ac.meiji.igusso.coptool.scop.Model2ScopTranslator;
-import jp.ac.meiji.igusso.coptool.scop.Scop4j;
-import jp.ac.meiji.igusso.coptool.sugar.Comparator;
-import jp.ac.meiji.igusso.coptool.sugar.Model2SugarTranslator;
-import jp.ac.meiji.igusso.coptool.sugar.Sugar4j;
+import jp.ac.meiji.igusso.model.Constraint;
+import jp.ac.meiji.igusso.model.Model;
+import jp.ac.meiji.igusso.model.Model2ScopTranslator;
+import jp.ac.meiji.igusso.model.Model2SugarTranslator;
+import jp.ac.meiji.igusso.model.Variable;
+import jp.ac.meiji.igusso.scop4j.Scop4j;
+import jp.ac.meiji.igusso.sugar4j.Comparator;
+import jp.ac.meiji.igusso.sugar4j.DummySolver;
+import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;
 
 import java.io.FileReader;
@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ public final class Main {
   private static void usage() {
     log("Main File Method Options...");
     log("  File    : path to instance file (required)");
-    log("  Method  : scop|linear|binary|incremental|hybrid|threestep|encode (required)");
+    log("  Method  : scop|linear|binary|1step|2step|incremental|hybrid|encode (required)");
     log("  Options : parameters for algorithms");
   }
 
@@ -44,158 +45,72 @@ public final class Main {
     return map;
   }
 
-  private static void solveWithScop(SchedulingProblem problem, Map<String, String> options)
-      throws Exception {
-    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    Model model = spe.encode();
-
-    log("Translating Constraints");
-    Model2ScopTranslator translator = Model2ScopTranslator.newInstance();
-    Scop4j scop4j = Scop4j.newInstance();
-    for (Variable variable : model.getVariables()) {
-      scop4j.addVariable(translator.translate(variable));
-    }
-    for (Constraint constraint : model.getConstraints()) {
-      scop4j.addConstraint(translator.translate(constraint));
-    }
-    log("Done");
-
-    log("Searching");
-    scop4j.setTimeout(3600);
-    final jp.ac.meiji.igusso.coptool.scop.Solution solution = scop4j.solve();
-    log("Done");
-    log("");
-
-    log("Scop Log");
-    List<String> logBody = Files.readAllLines(scop4j.getLogFile(), Charset.defaultCharset());
-    for (String line : logBody) {
-      log(line);
-    }
-    log("");
-
-    if (solution.getHardPenalty() > 0) {
-      log("Found No Feasible Solution");
-      return;
-    }
-
-    log("Solution");
-    for (Variable variable : model.getVariables()) {
-      log("%s = %s", variable.getName(),
-          solution.getSolution().get(translator.translate(variable)));
-    }
-    log("Penalty = %d", solution.getSoftPenalty());
-    log("Cpu Time = %d [ms]", solution.getCpuTime());
-    log("Cpu Time (Last Improved) = %d [ms]", solution.getLastImprovedCpuTime());
-    log("Done");
-  }
-
   public static void encodeSugar(SchedulingProblem problem, Map<String, String> options)
       throws Exception {
-    SchedulingProblemEncoder spe = new SchedulingProblemEncoder(problem);
-    Model model = spe.encode();
+    Sugar4jFormulator formulator = new Sugar4jFormulator(problem);
+    Sugar4j sugar4j = Sugar4j.newInstance(DummySolver.getInstance());
 
-    Model2SugarTranslator translator = Model2SugarTranslator.newInstance();
-    Sugar4j sugar4j = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
+    System.out.println(
+        String.format("; %-12s, %8s, %8s, %8s", "NAME", "NUM", "VARIABLE", "CLAUSE"));
 
-    for (Variable variable : model.getVariables()) {
-      sugar4j.addExpressions(translator.translate(variable));
-    }
-    System.out.println(String.format(
-        "; %20s, %6d, %6d", "base", sugar4j.getSatVariablesCount(), sugar4j.getSatClausesCount()));
+    sugar4j.addExpressions(formulator.getVariableDeclarations());
+    System.out.println(String.format("; %-12s, %8d, %8d, %8d", "variable",
+        formulator.getVariableDeclarations().size(), sugar4j.getSatVariablesCount(),
+        sugar4j.getSatClausesCount()));
 
-    for (Constraint constraint : model.getConstraints()) {
+    List<List<Expression>> constraints = Arrays.asList(formulator.getConstraint1(),
+        formulator.getConstraint2(), formulator.getConstraint3(), formulator.getConstraint4(),
+        formulator.getConstraint5(), formulator.getConstraint6(), formulator.getConstraint7(),
+        formulator.getConstraint8(), formulator.getConstraint9(), formulator.getConstraint11(),
+        formulator.getConstraint12(), formulator.getConstraint13(), formulator.getConstraint14());
+    List<String> constraintsName = Arrays.asList("cons1", "cons2", "cons3", "cons4", "cons5",
+        "cons6", "cons7", "cons8", "cons9", "cons11", "cons12", "cons13", "cons14");
+
+    int sumOfConstraints = 0;
+    for (int i = 0; i < constraints.size(); i++) {
       int prevVariablesCount = sugar4j.getSatVariablesCount();
       int prevClausesCount = sugar4j.getSatClausesCount();
-      sugar4j.addConstraints(translator.translate(constraint));
-      if (constraint.isHard()) {
-        System.out.println(String.format("; %20s, %6d, %6d", constraint.getName(),
-            sugar4j.getSatVariablesCount() - prevVariablesCount,
-            sugar4j.getSatClausesCount() - prevClausesCount));
-      } else {
-        System.out.println(String.format("; %20s, %6d, %6d, %3d, %3d", constraint.getName(),
-            sugar4j.getSatVariablesCount() - prevVariablesCount,
-            sugar4j.getSatClausesCount() - prevClausesCount, constraint.getWeight(),
-            constraint.getPenaltyUpperBound()));
-      }
+      sugar4j.addConstraints(constraints.get(i));
+      System.out.println(String.format("; %-12s, %8d, %8d, %8d", constraintsName.get(i),
+          constraints.get(i).size(), sugar4j.getSatVariablesCount() - prevVariablesCount,
+          sugar4j.getSatClausesCount() - prevClausesCount));
+
+      sumOfConstraints += constraints.get(i).size();
     }
 
     System.out.println(
         String.format("; ----------------------------------------------------------------"));
-    System.out.println(String.format("; %20s, %6d, %6d", "constraints",
+    System.out.println(String.format("; %-12s, %8d, %8d, %8d", "all", sumOfConstraints,
         sugar4j.getSatVariablesCount(), sugar4j.getSatClausesCount()));
 
-    int prevVariablesCount = sugar4j.getSatVariablesCount();
-    int prevClausesCount = sugar4j.getSatClausesCount();
-    sugar4j.addConstraints(translator.translateObjective());
-    System.out.println(String.format("; %20s, %6d, %6d", "obj",
-        sugar4j.getSatVariablesCount() - prevVariablesCount,
-        sugar4j.getSatClausesCount() - prevClausesCount));
-
-    //
     {
-      Model2SugarTranslator translator2 = Model2SugarTranslator.newInstance();
-      Sugar4j sugar4j2 = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
-      for (Variable variable : model.getVariables()) {
-        sugar4j2.addExpressions(translator2.translate(variable));
-      }
-      int maxWeight = 0;
-      for (Constraint constraint : model.getConstraints()) {
-        if (constraint.isSoft()) {
-          maxWeight = Math.max(maxWeight, constraint.getWeight());
-        }
-      }
-      for (Constraint constraint : model.getConstraints()) {
-        if (constraint.isHard() || constraint.getWeight() != maxWeight) {
-          sugar4j2.addConstraints(translator2.translate(constraint));
-        }
-      }
-      int prevVariablesCount2 = sugar4j2.getSatVariablesCount();
-      int prevClausesCount2 = sugar4j2.getSatClausesCount();
-      sugar4j2.addConstraints(translator2.translateObjective());
-      System.out.println(String.format("; %20s, %6d, %6d", "lightObj",
-          sugar4j2.getSatVariablesCount() - prevVariablesCount2,
-          sugar4j2.getSatClausesCount() - prevClausesCount2));
+      Sugar4j sugar4j2 = Sugar4j.newInstance(DummySolver.getInstance());
+      sugar4j2.addConstraints(formulator.getVariableDeclarations());
+      sugar4j2.addConstraints(formulator.getHardConstraints());
+      sugar4j2.addConstraints(formulator.getHeavyConstraints());
+
+      int prevVariablesCount = sugar4j2.getSatVariablesCount();
+      int prevClausesCount = sugar4j2.getSatClausesCount();
+      sugar4j2.addConstraints(formulator.generateHeavyObjective("OBJ"));
+      System.out.println(String.format("; %-12s, %8d, %8d, %8d", "heavy obj", -1,
+          sugar4j2.getSatVariablesCount() - prevVariablesCount,
+          sugar4j2.getSatClausesCount() - prevClausesCount));
     }
 
-    //
     {
-      Model2SugarTranslator translator2 = Model2SugarTranslator.newInstance();
-      Sugar4j sugar4j2 = Sugar4j.newInstance(IpasirSolver.newInstance("glueminisat"));
-      for (Variable variable : model.getVariables()) {
-        sugar4j2.addExpressions(translator2.translate(variable));
-      }
-      int maxWeight = 0;
-      for (Constraint constraint : model.getConstraints()) {
-        if (constraint.isSoft()) {
-          maxWeight = Math.max(maxWeight, constraint.getWeight());
-        }
-      }
-      for (Constraint constraint : model.getConstraints()) {
-        sugar4j2.addConstraints(translator2.translate(constraint));
-      }
-      List<Expression> terms = new ArrayList<>();
-      int penaltySum = 0;
-      for (Constraint constraint : model.getConstraints()) {
-        if (constraint.getWeight() == maxWeight) {
-          terms.add(translator2.getPenaltyVariableOf(constraint));
-          penaltySum += constraint.getPenaltyUpperBound();
-        }
-      }
-      int prevVariablesCount2 = sugar4j2.getSatVariablesCount();
-      int prevClausesCount2 = sugar4j2.getSatClausesCount();
-      sugar4j2.addConstraint(Expression.create(Expression.INT_DEFINITION, Expression.create("_P"),
-          Expression.ZERO, Expression.create(penaltySum)));
-      sugar4j2.addConstraint(Expression.create(
-          Expression.EQ, Expression.create("_P"), Expression.create(Expression.ADD, terms)));
-      System.out.println(String.format("; %20s, %6d, %6d", "heavyObj",
-          sugar4j2.getSatVariablesCount() - prevVariablesCount2,
-          sugar4j2.getSatClausesCount() - prevClausesCount2));
+      Sugar4j sugar4j2 = Sugar4j.newInstance(DummySolver.getInstance());
+      sugar4j2.addConstraints(formulator.getVariableDeclarations());
+      sugar4j2.addConstraints(formulator.getHardConstraints());
+      sugar4j2.addConstraints(formulator.getLightConstraints());
+
+      int prevVariablesCount = sugar4j2.getSatVariablesCount();
+      int prevClausesCount = sugar4j2.getSatClausesCount();
+      sugar4j2.addConstraints(formulator.generateLightObjective("OBJ"));
+      System.out.println(String.format("; %-12s, %8d, %8d, %8d", "light obj", -1,
+          sugar4j2.getSatVariablesCount() - prevVariablesCount,
+          sugar4j2.getSatClausesCount() - prevClausesCount));
     }
-
-    System.out.println(String.format(
-        "; %20s, %6d, %6d", "total", sugar4j.getSatVariablesCount(), sugar4j.getSatClausesCount()));
-
-    System.out.println(translator);
+    System.out.println(formulator);
   }
 
   public static void main(String[] args) throws Exception {
@@ -211,7 +126,7 @@ public final class Main {
 
     switch (args[1]) {
       case "scop": {
-        solveWithScop(sp, options);
+        new Scop4jMethod(options).solve(sp);
       } break;
       case "linear": {
         new LinearMethod(options).solve(sp);
@@ -219,14 +134,20 @@ public final class Main {
       case "binary": {
         new BinaryMethod(options).solve(sp);
       } break;
+      case "1step": {
+        new FirstStepMethod(options).solve(sp);
+      } break;
+      case "2step": {
+        new TwoStepMethod(options).solve(sp);
+      } break;
       case "incremental": {
         new IncrementalMethod(options).solve(sp);
       } break;
       case "hybrid": {
         new HybridMethod(options).solve(sp);
       } break;
-      case "threestep": {
-        new ThreeStepMethod(options).solve(sp);
+      case "hoge": {
+        new HogeMethod(options).solve(sp);
       } break;
       case "encode": {
         encodeSugar(sp, options);
