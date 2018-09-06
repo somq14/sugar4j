@@ -1,13 +1,14 @@
 package jp.ac.meiji.igusso.scheduling.ikegami;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 
 @EqualsAndHashCode
 public class DayOffRequest {
-  private final Staff staff;
-  private final int day;
-  private final int weight;
+  @Getter private final Staff staff;
+  @Getter private final int day;
+  @Getter private final int weight;
 
   public DayOffRequest(@NonNull Staff staff, int day, int weight) {
     this.staff = staff;

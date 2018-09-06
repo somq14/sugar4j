@@ -31,6 +31,14 @@ public class Cover {
     this.label = label;
   }
 
+  public boolean hasLowerBound() {
+    return min >= 0;
+  }
+
+  public boolean hasUpperBound() {
+    return max >= 0;
+  }
+
   @Override
   public String toString() {
     String body = String.join(", ", "day=" + day, "min=" + min, "max=" + max,

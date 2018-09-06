@@ -9,6 +9,10 @@ public interface Problem {
 
   public int getLength();
 
+  public int getOverStaffingWeight();
+
+  public int getUnderStaffingWeight();
+
   public List<Staff> getStaffs();
 
   public List<Shift> getShifts();

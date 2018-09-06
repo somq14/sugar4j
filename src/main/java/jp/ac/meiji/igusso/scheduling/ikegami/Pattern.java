@@ -15,6 +15,14 @@ public class Pattern {
   @Getter private int startDayOfWeek;
   @Getter private List<PatternAtom> atoms;
 
+  public boolean hasStartDay() {
+    return startDay >= 0;
+  }
+
+  public boolean hasStartDayOfWeek() {
+    return startDayOfWeek >= 0;
+  }
+
   public Pattern(int startDay, int startDayOfWeek, List<PatternAtom> atoms) {
     this.startDay = startDay;
     this.startDayOfWeek = startDayOfWeek;

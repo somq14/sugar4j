@@ -1,14 +1,15 @@
 package jp.ac.meiji.igusso.scheduling.ikegami;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 
 @EqualsAndHashCode
 public class ShiftOffRequest {
-  private final Staff staff;
-  private final Shift shift;
-  private final int day;
-  private final int weight;
+  @Getter private final Staff staff;
+  @Getter private final Shift shift;
+  @Getter private final int day;
+  @Getter private final int weight;
 
   public ShiftOffRequest(@NonNull Staff staff, @NonNull Shift shift, int day, int weight) {
     this.staff = staff;

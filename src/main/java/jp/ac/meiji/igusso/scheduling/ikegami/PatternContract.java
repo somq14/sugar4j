@@ -25,6 +25,14 @@ public final class PatternContract {
   // Starts are not supported
   // StartExcludes are not supported
 
+  public boolean hasLowerBound() {
+    return min >= 0;
+  }
+
+  public boolean hasUpperBound() {
+    return max >= 0;
+  }
+
   public PatternContract(int beginDay, int endDay, int min, int minWeight, String minLabel, int max,
       int maxWeight, String maxLabel, @NonNull List<Pattern> patterns) {
     this.beginDay = beginDay;
