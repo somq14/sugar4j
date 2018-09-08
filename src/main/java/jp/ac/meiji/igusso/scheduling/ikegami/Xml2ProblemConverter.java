@@ -93,34 +93,6 @@ final class Xml2ProblemConverter {
     }
   }
 
-  /*
-  private static Element getNode(Node node, String expr) {
-    Element res = null;
-    try {
-      res = (Element) xpath.evaluate(expr, node, XPathConstants.NODE);
-    } catch (XPathExpressionException ex) {
-      ex.printStackTrace();
-      throw new RuntimeException(ex);
-    }
-    return res;
-  }
-
-  private static List<Element> getNodes(Node node, String expr) {
-    List<Element> res = new ArrayList<>();
-    try {
-      NodeList list = (NodeList) xpath.evaluate(expr, node, XPathConstants.NODESET);
-
-      for (int i = 0; i < list.getLength(); i++) {
-        res.add((Element) list.item(i));
-      }
-    } catch (XPathExpressionException ex) {
-      ex.printStackTrace();
-      throw new RuntimeException(ex);
-    }
-    return Collections.unmodifiableList(res);
-  }
-  */
-
   private Document parseXml(InputStream instance) throws IOException, SAXException {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
