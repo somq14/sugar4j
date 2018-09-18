@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"jp.ac.meiji.igusso.model","h":"","u":""},{"l":"jp.ac.meiji.igusso.scheduling","h":"","u":""},{"l":"jp.ac.meiji.igusso.scop4j","h":"","u":""},{"l":"jp.ac.meiji.igusso.scop4j.example","h":"","u":""},{"l":"jp.ac.meiji.igusso.sugar4j","h":"","u":""},{"l":"jp.ac.meiji.igusso.sugar4j.example","h":"","u":""}]
