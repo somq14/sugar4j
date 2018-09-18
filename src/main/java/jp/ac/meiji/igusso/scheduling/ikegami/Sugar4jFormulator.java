@@ -448,7 +448,7 @@ public final class Sugar4jFormulator {
       if (cover.hasUpperBound()) {
         Expression p = create(format("_P2_d%02d_%03d", d, coverCount));
         final int pMax = Math.max(0, targetStaffs.size() - cover.getMax());
-        final int pWeight = problem.getUnderStaffingWeight();
+        final int pWeight = problem.getOverStaffingWeight();
         res.add(create(INT_DEFINITION, p, ZERO, create(pMax)));
 
         penaltyVariables.add(p);
