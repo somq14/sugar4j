@@ -1,5 +1,3 @@
-package jp.ac.meiji.igusso.scop4j.example;
-
 import jp.ac.meiji.igusso.scop4j.AllDifferentConstraint;
 import jp.ac.meiji.igusso.scop4j.Comparator;
 import jp.ac.meiji.igusso.scop4j.Constraint;

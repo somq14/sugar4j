@@ -13,7 +13,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-
+/**
+ * 変数を表すクラス.
+ */
 @ToString
 @EqualsAndHashCode
 public class Variable implements Comparable<Variable> {

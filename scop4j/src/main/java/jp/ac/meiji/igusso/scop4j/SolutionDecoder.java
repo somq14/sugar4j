@@ -15,6 +15,9 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Scopの出力ログから情報を取得する機能のあるクラス.
+ */
 @ToString
 @EqualsAndHashCode
 public final class SolutionDecoder implements Closeable {

@@ -10,6 +10,9 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Scop4jオブジェクトをScopの入力ファイルへエンコードする機能を持つクラス.
+ */
 @ToString
 @EqualsAndHashCode
 public class ScopEncoder implements Closeable {
@@ -60,7 +63,21 @@ public class ScopEncoder implements Closeable {
   }
 
   public void encode(@NonNull QuadraticConstraint constraint) {
-    throw new UnsupportedOperationException();
+    List<String> terms = new ArrayList<>();
+
+    int ind = 0;
+    for (QuadraticTerm term : constraint) {
+      if (ind % 5 == 0) {
+        terms.add(String.format("%n    "));
+      }
+      terms.add(String.format("%d(%s, %s)(%s, %s)", term.getCoeff(), term.getVariable1().getName(),
+          term.getValue1(), term.getVariable2().getName(), term.getValue2()));
+      ind++;
+    }
+
+    writer.printf("%s: weight = %s type = quadratic %s %s %d%n", constraint.getName(),
+        encodeWeight(constraint.getWeight()), String.join(" ", terms),
+        encodeComparator(constraint.getOp()), constraint.getRhs());
   }
 
   public void encode(@NonNull AllDifferentConstraint constraint) {

@@ -130,7 +130,7 @@ final class Scop4jImpl implements Scop4j {
 
   @Override
   public void setVerbose(int verbose) {
-    if (verbose < 0 || verbose > 4) {
+    if (verbose < 0 || verbose >= 4) {
       throw new IllegalArgumentException();
     }
     this.verbose = verbose;

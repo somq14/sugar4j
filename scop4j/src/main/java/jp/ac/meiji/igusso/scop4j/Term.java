@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 
+/**
+ * liner制約を構成する項を表すクラス.
+ */
 @ToString
 @EqualsAndHashCode
 public final class Term {
@@ -14,7 +17,8 @@ public final class Term {
 
   private Term(int coeff, @NonNull Variable variable, @NonNull String value) {
     if (!variable.getDomain().contains(value)) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(String.format(
+          "domain of variable %s does not contain value %s", variable.getName(), value));
     }
     this.coeff = coeff;
     this.variable = variable;

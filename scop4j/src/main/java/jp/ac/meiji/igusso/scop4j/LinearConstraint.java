@@ -11,6 +11,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * liner制約を表すクラス.
+ */
 @ToString
 @EqualsAndHashCode
 public final class LinearConstraint extends AbstractConstraint implements Iterable<Term> {
@@ -47,6 +50,8 @@ public final class LinearConstraint extends AbstractConstraint implements Iterab
     return new Builder(name, op, rhs, weight);
   }
 
+  @EqualsAndHashCode
+  @ToString
   public static final class Builder {
     @Getter @Setter private String name;
     @Getter @Setter private Comparator op;

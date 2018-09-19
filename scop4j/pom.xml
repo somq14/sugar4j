@@ -4,7 +4,7 @@
   <groupId>jp.ac.meiji.igusso</groupId>
   <artifactId>scop4j</artifactId>
   <packaging>jar</packaging>
-  <version>0.5</version>
+  <version>1.0</version>
   <name>scop4j</name>
   <url>http://maven.apache.org</url>
 

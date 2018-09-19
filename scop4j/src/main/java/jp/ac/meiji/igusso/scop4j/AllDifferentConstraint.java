@@ -12,6 +12,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * alldiff制約を表すクラス.
+ */
 @ToString
 @EqualsAndHashCode
 public final class AllDifferentConstraint extends AbstractConstraint implements Iterable<Variable> {

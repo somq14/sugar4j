@@ -1,14 +1,15 @@
 package jp.ac.meiji.igusso.scop4j;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 
 @ToString
 @EqualsAndHashCode
-public abstract class AbstractConstraint implements Constraint {
-  private final String name;
-  private final int weight;
+abstract class AbstractConstraint implements Constraint {
+  @Getter private final String name;
+  @Getter private final int weight;
 
   protected AbstractConstraint(@NonNull String name, int weight) {
     if (!NAME_PATTERN.matcher("name").matches()) {
@@ -19,11 +20,6 @@ public abstract class AbstractConstraint implements Constraint {
   }
 
   @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
   public boolean isHard() {
     return weight < 0;
   }
@@ -31,11 +27,6 @@ public abstract class AbstractConstraint implements Constraint {
   @Override
   public boolean isSoft() {
     return weight >= 0;
-  }
-
-  @Override
-  public int getWeight() {
-    return weight;
   }
 
   @Override
