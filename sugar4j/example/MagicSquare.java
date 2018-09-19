@@ -1,8 +1,4 @@
-package jp.ac.meiji.igusso.sugar4j.example;
-
-// Java CHECKSTYLE:OFF AvoidStarImport
 import static jp.kobe_u.sugar.expression.Expression.*;
-// Java CHECKSTYLE:ON AvoidStarImport
 
 import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
 import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
@@ -15,7 +11,6 @@ import jp.kobe_u.sugar.expression.Expression;
 import java.util.ArrayList;
 import java.util.List;
 
-// Java CHECKSTYLE:OFF MemberName
 public class MagicSquare {
   private final List<Expression> csp;
   private Expression[][] x;
@@ -132,4 +127,3 @@ public class MagicSquare {
     ms.solve();
   }
 }
-// Java CHECKSTYLE:ON MemberName

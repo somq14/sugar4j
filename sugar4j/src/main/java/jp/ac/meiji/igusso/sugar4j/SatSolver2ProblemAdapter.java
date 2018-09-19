@@ -27,8 +27,7 @@ final class SatSolver2ProblemAdapter extends Problem {
   }
 
   @Override
-  public void done() {
-  }
+  public void done() {}
 
   @Override
   public void addNormalizedClause(int[] clause) {

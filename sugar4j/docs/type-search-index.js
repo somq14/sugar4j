@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"DummySolver","h":"","u":""},{"l":"IpasirLibrary","h":"","u":""},{"l":"IpasirLibrary.IpasirCallback","h":"","u":""},{"l":"IpasirSolver","h":"","u":""},{"l":"SatSolver","h":"","u":""},{"l":"Solution","h":"","u":""},{"l":"Sugar4j","h":"","u":""},{"l":"Sugar4jException","h":"","u":""}]

@@ -159,7 +159,7 @@ public final class Sugar4jTest {
     assertThat(solution.isSat(), is(true));
     assertThat(v0 < v1 && v1 < v2, is(true));
 
-    sugar4j.addAssumption(iv[0], Comparator.GE, 2);
+    sugar4j.addAssumption(iv[0], Expression.GE, 2);
     solution = sugar4j.solve();
     v0 = solution.getIntMap().get(iv[0]);
     v1 = solution.getIntMap().get(iv[1]);
@@ -169,7 +169,7 @@ public final class Sugar4jTest {
     assertThat(v1, is(3));
     assertThat(v2, is(4));
 
-    sugar4j.addAssumption(iv[0], Comparator.GE, 3);
+    sugar4j.addAssumption(iv[0], Expression.GE, 3);
     solution = sugar4j.solve();
     assertThat(solution.isSat(), is(false));
   }
@@ -179,7 +179,7 @@ public final class Sugar4jTest {
     sugar4j.addConstraint(create(Expression.EQ, iv[0], iv[1]));
     sugar4j.addConstraint(create(Expression.EQ, iv[1], iv[2]));
 
-    sugar4j.addAssumption(iv[0], Comparator.GE, 10);
+    sugar4j.addAssumption(iv[0], Expression.GE, 10);
 
     Solution solution = sugar4j.solve();
     assertThat(solution.isSat(), is(false));
@@ -190,7 +190,7 @@ public final class Sugar4jTest {
     sugar4j.addConstraint(create(Expression.EQ, iv[0], iv[1]));
     sugar4j.addConstraint(create(Expression.EQ, iv[1], iv[2]));
 
-    sugar4j.addAssumption(iv[0], Comparator.LE, -1);
+    sugar4j.addAssumption(iv[0], Expression.LE, -1);
 
     Solution solution = sugar4j.solve();
     assertThat(solution.isSat(), is(false));
@@ -203,12 +203,12 @@ public final class Sugar4jTest {
 
     Solution solution = null;
 
-    sugar4j.addAssumption(iv[0], Comparator.EQ, 1);
+    sugar4j.addAssumption(iv[0], Expression.EQ, 1);
     solution = sugar4j.solve();
     assertThat(solution.isSat(), is(true));
     assertThat(solution.getIntMap().get(iv[0]), is(1));
 
-    sugar4j.addAssumption(iv[0], Comparator.EQ, 2);
+    sugar4j.addAssumption(iv[0], Expression.EQ, 2);
     solution = sugar4j.solve();
     assertThat(solution.isSat(), is(true));
     assertThat(solution.getIntMap().get(iv[0]), is(2));

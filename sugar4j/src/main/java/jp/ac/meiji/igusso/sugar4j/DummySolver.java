@@ -8,13 +8,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * ソルバの機能がないダミーのSatSolverインタフェースの実装クラス.
+ */
 @ToString
 @EqualsAndHashCode
 public final class DummySolver implements SatSolver {
   private static final DummySolver singleton = new DummySolver();
 
-  private DummySolver() {
-  }
+  private DummySolver() {}
 
   public static DummySolver getInstance() {
     return singleton;
@@ -26,16 +28,13 @@ public final class DummySolver implements SatSolver {
   }
 
   @Override
-  public void add(@NonNull int... clause) {
-  }
+  public void add(@NonNull int... clause) {}
 
   @Override
-  public void add(@NonNull Collection<Integer> clause) {
-  }
+  public void add(@NonNull Collection<Integer> clause) {}
 
   @Override
-  public void assume(int literal) {
-  }
+  public void assume(int literal) {}
 
   @Override
   public List<Integer> solve() {
@@ -48,7 +47,5 @@ public final class DummySolver implements SatSolver {
   }
 
   @Override
-  public void close() {
-  }
+  public void close() {}
 }
-

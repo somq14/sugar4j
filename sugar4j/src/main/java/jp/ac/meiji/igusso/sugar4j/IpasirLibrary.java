@@ -4,6 +4,9 @@ import com.sun.jna.Callback;
 import com.sun.jna.Library;
 import com.sun.jna.Pointer;
 
+/**
+ * インクリメンタルSAT APIのIPASIRを定義したインタフェース.
+ */
 // Java CHECKSTYLE:OFF JavadocParagraph
 // Java CHECKSTYLE:OFF ParameterName
 public interface IpasirLibrary extends Library {

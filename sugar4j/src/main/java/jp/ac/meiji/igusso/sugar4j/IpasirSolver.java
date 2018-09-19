@@ -12,6 +12,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * IPASIRを実装したネイティブソルバを利用するSatSolverインタフェースの実装クラス.
+ * ローカルの環境にIPASIRの共有ライブラリがインストールされていることが必要である.
+ */
 @ToString
 @EqualsAndHashCode
 public final class IpasirSolver implements SatSolver {

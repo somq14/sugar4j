@@ -116,7 +116,7 @@ final class Sugar4jImpl implements Sugar4j {
   }
 
   @Override
-  public void addAssumption(Expression boolVariable, boolean isPositive) throws SugarException {
+  public void addAssumption(Expression boolVariable, boolean isPositive) {
     update();
 
     BooleanVariable variable = csp.getBooleanVariable(boolVariable.stringValue());
@@ -124,20 +124,23 @@ final class Sugar4jImpl implements Sugar4j {
   }
 
   @Override
-  public void addAssumption(Expression intVariable, Comparator op, int value)
-      throws SugarException {
-    if (op == Comparator.LT) {
-      addAssumption(intVariable, Comparator.LE, value - 1);
+  public void addAssumption(Expression intVariable, Expression op, int value) {
+    if (Expression.LT.equals(op)) {
+      addAssumption(intVariable, Expression.LE, value - 1);
       return;
     }
-    if (op == Comparator.GT) {
-      addAssumption(intVariable, Comparator.GE, value + 1);
+    if (Expression.GT.equals(op)) {
+      addAssumption(intVariable, Expression.GE, value + 1);
       return;
     }
-    if (op == Comparator.EQ) {
-      addAssumption(intVariable, Comparator.LE, value);
-      addAssumption(intVariable, Comparator.GE, value);
+    if (Expression.EQ.equals(op)) {
+      addAssumption(intVariable, Expression.LE, value);
+      addAssumption(intVariable, Expression.GE, value);
       return;
+    }
+
+    if (!Expression.LE.equals(op) && !Expression.GE.equals(op)) {
+      throw new IllegalStateException("op must be one of EQ, LE, GE, LT, GT");
     }
 
     update();
@@ -145,7 +148,7 @@ final class Sugar4jImpl implements Sugar4j {
     IntegerVariable variable = csp.getIntegerVariable(intVariable.stringValue());
 
     int baseCode = variable.getCode();
-    if (op == Comparator.LE) {
+    if (Expression.LE.equals(op)) {
       if (value < variable.getDomain().getLowerBound()) {
         // unsat
         solver.assume(baseCode);
@@ -164,7 +167,7 @@ final class Sugar4jImpl implements Sugar4j {
         ex.printStackTrace();
         throw new IllegalStateException();
       }
-    } else if (op == Comparator.GE) {
+    } else if (Expression.GE.equals(op)) {
       if (value > variable.getDomain().getUpperBound()) {
         // unsat
         solver.assume(baseCode);
@@ -206,7 +209,7 @@ final class Sugar4jImpl implements Sugar4j {
   }
 
   @Override
-  public void update() throws SugarException {
+  public void update() {
     try {
       csp.propagate();
       Simplifier simplifier = new Simplifier(csp);
@@ -216,19 +219,19 @@ final class Sugar4jImpl implements Sugar4j {
       csp.commit();
       encoder.commit();
     } catch (IOException ex1) {
-      throw new SugarException("IOException occurred", ex1);
+      throw new Sugar4jException("IOException occurred", ex1);
     } catch (SugarException ex2) {
-      throw ex2;
+      throw new Sugar4jException(ex2);
     }
   }
 
   @Override
-  public Solution solve() throws SugarException {
+  public Solution solve() {
     return solve(-1);
   }
 
   @Override
-  public Solution solve(long timeout) throws SugarException {
+  public Solution solve(long timeout) {
     update();
 
     List<Integer> solution = solver.solve(timeout);
@@ -256,11 +259,15 @@ final class Sugar4jImpl implements Sugar4j {
         offset++;
       }
 
-      Iterator<Integer> it = domain.values();
-      for (int i = 0; i < offset; i++) {
-        it.next();
+      try {
+        Iterator<Integer> it = domain.values();
+        for (int i = 0; i < offset; i++) {
+          it.next();
+        }
+        intMap.put(create(variable.getName()), it.next());
+      } catch (SugarException ex) {
+        throw new Sugar4jException(ex);
       }
-      intMap.put(create(variable.getName()), it.next());
     }
 
     Map<Expression, Boolean> boolMap = new HashMap<>();
@@ -281,13 +288,13 @@ final class Sugar4jImpl implements Sugar4j {
   }
 
   @Override
-  public int getSatClausesCount() throws SugarException {
+  public int getSatClausesCount() {
     update();
     return encoder.getSatClausesCount();
   }
 
   @Override
-  public int getSatVariablesCount() throws SugarException {
+  public int getSatVariablesCount() {
     update();
     return encoder.getSatVariablesCount();
   }
