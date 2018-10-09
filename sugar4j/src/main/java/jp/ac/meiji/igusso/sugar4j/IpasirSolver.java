@@ -1,6 +1,5 @@
 package jp.ac.meiji.igusso.sugar4j;
 
-import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import lombok.EqualsAndHashCode;
@@ -117,8 +116,8 @@ public final class IpasirSolver implements SatSolver {
   @Override
   public void close() {
     if (ipasir != null) {
-      ipasir.ipasir_release(solver);
       ipasir.ipasir_set_terminate(solver, null, null);
+      ipasir.ipasir_release(solver);
     }
     ipasir = null;
     solver = null;
