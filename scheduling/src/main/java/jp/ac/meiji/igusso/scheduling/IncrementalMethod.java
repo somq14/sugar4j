@@ -2,7 +2,6 @@ package jp.ac.meiji.igusso.scheduling;
 
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.ac.meiji.igusso.sugar4j.Solution;
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.expression.Expression;
@@ -49,7 +48,7 @@ public final class IncrementalMethod extends Sugar4jMethod {
 
     while (penalty > 0) {
       log("Searching %s <= %d", obj.stringValue(), penalty - 1);
-      sugar4j.addAssumption(obj, Comparator.LE, penalty - 1);
+      sugar4j.addAssumption(obj, Expression.LE, penalty - 1);
       solution = invoke(timeout);
 
       if (solution.isTimeout()) {
@@ -129,7 +128,7 @@ public final class IncrementalMethod extends Sugar4jMethod {
 
       while (penalty > 0) {
         log("Search %s <= %d", penaltyVariable.stringValue(), penalty - 1);
-        sugar4j.addAssumption(penaltyVariable, Comparator.LE, penalty - 1);
+        sugar4j.addAssumption(penaltyVariable, Expression.LE, penalty - 1);
 
         solution = invoke(timeout);
         if (solution.isTimeout()) {

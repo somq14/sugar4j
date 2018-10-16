@@ -6,7 +6,6 @@ import jp.ac.meiji.igusso.model.Model2ScopTranslator;
 import jp.ac.meiji.igusso.model.Model2SugarTranslator;
 import jp.ac.meiji.igusso.model.Variable;
 import jp.ac.meiji.igusso.scop4j.Scop4j;
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.ac.meiji.igusso.sugar4j.DummySolver;
 import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;

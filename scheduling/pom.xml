@@ -4,12 +4,12 @@
   <groupId>jp.ac.meiji.igusso</groupId>
   <artifactId>scheduling</artifactId>
   <packaging>jar</packaging>
-  <version>0.5</version>
+  <version>0.5.0</version>
   <name>scheduling</name>
   <url>http://maven.apache.org</url>
 
   <properties>
-    <java.version>1.10</java.version>
+    <java.version>1.8</java.version>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,7 +45,7 @@
     <dependency>
         <groupId>jp.ac.meiji.igusso</groupId>
         <artifactId>sugar4j</artifactId>
-        <version>0.5</version>
+        <version>1.0.2</version>
     </dependency>
 
     <dependency>

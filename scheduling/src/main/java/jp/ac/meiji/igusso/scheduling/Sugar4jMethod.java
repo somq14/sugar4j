@@ -6,7 +6,6 @@ import jp.ac.meiji.igusso.model.Constraint;
 import jp.ac.meiji.igusso.model.Model;
 import jp.ac.meiji.igusso.model.Model2SugarTranslator;
 import jp.ac.meiji.igusso.model.Variable;
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
 import jp.ac.meiji.igusso.sugar4j.Solution;
 import jp.ac.meiji.igusso.sugar4j.Sugar4j;

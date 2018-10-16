@@ -2,24 +2,28 @@ package jp.ac.meiji.igusso.scheduling.ikegami;
 
 import static java.lang.String.format;
 import static jp.ac.meiji.igusso.scop4j.Comparator.EQ;
-import static jp.ac.meiji.igusso.scop4j.Comparator.LE;
 import static jp.ac.meiji.igusso.scop4j.Comparator.GE;
+import static jp.ac.meiji.igusso.scop4j.Comparator.LE;
 
-import lombok.ToString;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import jp.ac.meiji.igusso.scop4j.Variable;
+import jp.ac.meiji.igusso.scop4j.Comparator;
 import jp.ac.meiji.igusso.scop4j.Constraint;
 import jp.ac.meiji.igusso.scop4j.LinearConstraint;
 import jp.ac.meiji.igusso.scop4j.Term;
-import jp.ac.meiji.igusso.scop4j.Comparator;
+import jp.ac.meiji.igusso.scop4j.Variable;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.ToString;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Collection;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
+// Java CHECKSTYLE:OFF MemberName
+// Java CHECKSTYLE:OFF AbbreviationAsWordInName
+// Java CHECKSTYLE:OFF LocalVariableName
+// Java CHECKSTYLE:OFF ParameterName
 @ToString
 @EqualsAndHashCode
 public final class Scop4jFormulator {
@@ -490,3 +494,7 @@ public final class Scop4jFormulator {
     System.out.printf("Cpu Time (Last Improved) = %d [ms]%n", sol.getLastImprovedCpuTime());
   }
 }
+// Java CHECKSTYLE:ON MemberName
+// Java CHECKSTYLE:ON AbbreviationAsWordInName
+// Java CHECKSTYLE:ON LocalVariableName
+// Java CHECKSTYLE:ON ParameterName

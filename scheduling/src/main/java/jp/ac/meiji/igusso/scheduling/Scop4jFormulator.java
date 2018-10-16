@@ -22,7 +22,7 @@ import java.util.Map;
 
 // Java CHECKSTYLE:OFF MemberName
 // Java CHECKSTYLE:OFF AbbreviationAsWordInName
-// Java CHECKSTYLE:OFF LocalVariableName
+//Java CHECKSTYLE:OFF LocalVariableName
 public final class Scop4jFormulator {
   private final SchedulingProblem problem;
 
@@ -487,4 +487,4 @@ public final class Scop4jFormulator {
 }
 // Java CHECKSTYLE:ON MemberName
 // Java CHECKSTYLE:ON AbbreviationAsWordInName
-// Java CHECKSTYLE:ON LocalVariableName
+//Java CHECKSTYLE:ON LocalVariableName

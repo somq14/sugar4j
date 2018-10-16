@@ -2,7 +2,6 @@ package jp.ac.meiji.igusso.scheduling;
 
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.ac.meiji.igusso.sugar4j.Solution;
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.expression.Expression;
@@ -47,7 +46,7 @@ public final class TwoStepMethod extends Sugar4jMethod {
     while (true) {
       log("Search OBJ <= %d", ans1 - 1);
 
-      sugar4j.addAssumption(obj1, Comparator.LE, ans1 - 1);
+      sugar4j.addAssumption(obj1, Expression.LE, ans1 - 1);
       solution = invoke(timeout);
 
       if (solution.isTimeout()) {
@@ -91,7 +90,7 @@ public final class TwoStepMethod extends Sugar4jMethod {
     while (true) {
       log("Search OBJ <= %d", ans2 - 1);
 
-      sugar4j.addAssumption(obj2, Comparator.LE, ans2 - 1);
+      sugar4j.addAssumption(obj2, Expression.LE, ans2 - 1);
       solution = invoke(timeout);
 
       if (solution.isTimeout()) {

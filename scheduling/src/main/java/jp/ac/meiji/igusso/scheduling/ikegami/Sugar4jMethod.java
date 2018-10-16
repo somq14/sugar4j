@@ -2,13 +2,12 @@ package jp.ac.meiji.igusso.scheduling.ikegami;
 
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import java.io.File;
-
-import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.ac.meiji.igusso.sugar4j.Solution;
+import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;
+
+import java.io.File;
 
 public class Sugar4jMethod {
   public static void main(String[] args) throws Exception {
@@ -25,7 +24,7 @@ public class Sugar4jMethod {
 
     Expression obj = create("OBJ");
     for (int ans = 0; ans <= 4; ans++) {
-      sugar4j.addAssumption(obj, Comparator.LE, ans);
+      sugar4j.addAssumption(obj, Expression.LE, ans);
 
       long beginTime = System.currentTimeMillis();
       Solution sol = sugar4j.solve();

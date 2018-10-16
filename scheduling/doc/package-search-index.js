@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"jp.ac.meiji.igusso.model","h":"","u":""},{"l":"jp.ac.meiji.igusso.scheduling","h":"","u":""},{"l":"jp.ac.meiji.igusso.scheduling.ikegami","h":"","u":""}]

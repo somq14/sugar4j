@@ -2,7 +2,6 @@ package jp.ac.meiji.igusso.scheduling;
 
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.ac.meiji.igusso.sugar4j.Solution;
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.expression.Expression;
@@ -40,7 +39,7 @@ public final class LinearMethod extends Sugar4jMethod {
     while (true) {
       log("Search OBJ <= %d", ans - 1);
 
-      sugar4j.addAssumption(obj, Comparator.LE, ans - 1);
+      sugar4j.addAssumption(obj, Expression.LE, ans - 1);
       solution = invoke(timeout);
 
       if (solution.isTimeout()) {

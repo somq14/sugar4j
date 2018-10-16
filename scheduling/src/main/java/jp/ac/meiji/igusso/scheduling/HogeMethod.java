@@ -5,7 +5,6 @@ import static jp.kobe_u.sugar.expression.Expression.create;
 import jp.ac.meiji.igusso.scop4j.Constraint;
 import jp.ac.meiji.igusso.scop4j.Scop4j;
 import jp.ac.meiji.igusso.scop4j.Variable;
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.expression.Expression;
 
@@ -115,7 +114,7 @@ public final class HogeMethod extends Sugar4jMethod {
         int t = Integer.valueOf(solution.getSolution().get(
             Variable.of(String.format("x_i%02d_d%02d", i, d), T.length)));
         sugar4j.addAssumption(
-            create(String.format("x_i%02d_d%02d_t%02d", i, d, t)), Comparator.EQ, 1);
+            create(String.format("x_i%02d_d%02d_t%02d", i, d, t)), Expression.EQ, 1);
       }
     }
     log("Done");
@@ -153,7 +152,7 @@ public final class HogeMethod extends Sugar4jMethod {
     while (true) {
       log("Search OBJ <= %d", ans - 1);
 
-      sugar4j.addAssumption(obj, Comparator.LE, ans - 1);
+      sugar4j.addAssumption(obj, Expression.LE, ans - 1);
       sugarSolution = invoke(timeout);
 
       if (sugarSolution.isTimeout()) {

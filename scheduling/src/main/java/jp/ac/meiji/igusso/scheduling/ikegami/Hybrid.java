@@ -4,15 +4,14 @@ import static jp.kobe_u.sugar.expression.Expression.create;
 
 import jp.ac.meiji.igusso.scop4j.Scop4j;
 import jp.ac.meiji.igusso.scop4j.Variable;
-import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.ac.meiji.igusso.sugar4j.IpasirSolver;
-import jp.ac.meiji.igusso.sugar4j.Comparator;
+import jp.ac.meiji.igusso.sugar4j.Sugar4j;
 import jp.kobe_u.sugar.expression.Expression;
 
-import java.nio.file.Files;
-import java.nio.charset.Charset;
-import java.util.List;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.util.List;
 
 public final class Hybrid {
   public static void log(String format, Object... objs) {
@@ -23,8 +22,8 @@ public final class Hybrid {
   public static void main(String[] args) throws Exception {
     log("Formulation...");
     Problem problem = Problem.of(new java.io.File(args[0]));
-    Scop4jFormulator scopFormulator = new Scop4jFormulator(problem);
-    Sugar4jFormulator sugarFormulator = new Sugar4jFormulator(problem);
+    final Scop4jFormulator scopFormulator = new Scop4jFormulator(problem);
+    final Sugar4jFormulator sugarFormulator = new Sugar4jFormulator(problem);
     log("Done");
     log("");
 
@@ -70,21 +69,21 @@ public final class Hybrid {
     log("Add Assumption...");
     for (int i = 0; i < problem.getStaffs().size(); i++) {
       for (int d = 0; d < problem.getLength(); d++) {
-        int t = Integer.valueOf(scopSol.getSolution().get(
+        int tt = Integer.valueOf(scopSol.getSolution().get(
             Variable.of(String.format("x_i%02d_d%02d", i, d), problem.getShifts().size() + 1)));
         sugar4j.addAssumption(
-            create(String.format("x_i%02d_d%02d_t%02d", i, d, t)), Comparator.EQ, 1);
+            create(String.format("x_i%02d_d%02d_t%02d", i, d, tt)), Expression.EQ, 1);
       }
     }
     log("Done");
     log("");
 
     log("Solve With Sugar...");
-    long beginTime = System.currentTimeMillis();
+    final long beginTime = System.currentTimeMillis();
     int ans = scopSol.getSoftPenalty() + 1;
     jp.ac.meiji.igusso.sugar4j.Solution bestSol = null;
     while (ans > 0) {
-      sugar4j.addAssumption(create("OBJ"), Comparator.LE, ans - 1);
+      sugar4j.addAssumption(create("OBJ"), Expression.LE, ans - 1);
       jp.ac.meiji.igusso.sugar4j.Solution sol = sugar4j.solve();
       if (!sol.isSat()) {
         break;
@@ -93,7 +92,7 @@ public final class Hybrid {
       bestSol = sol;
       sugar4j.addConstraint(create(Expression.LE, create("OBJ"), create(ans)));
     }
-    long endTime = System.currentTimeMillis();
+    final long endTime = System.currentTimeMillis();
     log("Done");
     log("");
 

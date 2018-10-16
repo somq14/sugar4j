@@ -2,7 +2,6 @@ package jp.ac.meiji.igusso.scheduling;
 
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import jp.ac.meiji.igusso.sugar4j.Comparator;
 import jp.ac.meiji.igusso.sugar4j.Solution;
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.expression.Expression;
@@ -43,7 +42,7 @@ public final class BinaryMethod extends Sugar4jMethod {
       log("Bound %d <= OBJ <= %d", lb + 1, ub);
 
       int mid = lb + (ub - lb) / 2;
-      sugar4j.addAssumption(obj, Comparator.LE, mid);
+      sugar4j.addAssumption(obj, Expression.LE, mid);
 
       log("Searching OBJ <= %d", mid);
       solution = invoke(timeout);
