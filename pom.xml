@@ -81,10 +81,8 @@
           <charset>UTF-8</charset>
           <docencoding>UTF-8</docencoding>
           <sourcepath>target/generated-sources/delombok</sourcepath>
-          <additionalOptions>-html5</additionalOptions>
           <links>
             <link>http://docs.oracle.com/javase/jp/8/docs/api/</link>
-            <link>http://hoge99.github.io/sugar-mirror/api/</link>
           </links>
         </configuration>
       </plugin>
