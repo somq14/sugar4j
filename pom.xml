@@ -31,12 +31,6 @@
     </dependency>
 
     <dependency>
-      <groupId>jp.kobe_u.sugar</groupId>
-      <artifactId>sugar</artifactId>
-      <version>2.3.3</version>
-    </dependency>
-
-    <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
         <version>4.5.2</version>
