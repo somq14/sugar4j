@@ -2,14 +2,12 @@ package jp.ac.meiji.igusso.sugar4j;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.ToString;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * IPASIRを実装したネイティブソルバを利用するSatSolverインタフェースの実装クラス.
@@ -85,22 +83,6 @@ public final class IpasirSolver implements SatSolver {
     return res;
   }
 
-  private static class TimeoutCallback implements IpasirLibrary.IpasirCallback {
-    private final long period;
-    private final long beginTime;
-
-    TimeoutCallback(long period) {
-      this.period = period;
-      this.beginTime = System.currentTimeMillis();
-    }
-
-    @Override
-    public int callback(Pointer state) {
-      long currTime = System.currentTimeMillis();
-      return (currTime - beginTime) >= period * 1000L ? 1 : 0;
-    }
-  }
-
   @Override
   public List<Integer> solve(long timeout) {
     if (timeout <= 0) {
@@ -121,5 +103,21 @@ public final class IpasirSolver implements SatSolver {
     }
     ipasir = null;
     solver = null;
+  }
+
+  private static class TimeoutCallback implements IpasirLibrary.IpasirCallback {
+    private final long period;
+    private final long beginTime;
+
+    TimeoutCallback(long period) {
+      this.period = period;
+      this.beginTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public int callback(Pointer state) {
+      long currTime = System.currentTimeMillis();
+      return (currTime - beginTime) >= period * 1000L ? 1 : 0;
+    }
   }
 }

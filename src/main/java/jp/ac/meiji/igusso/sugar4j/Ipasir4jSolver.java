@@ -2,18 +2,23 @@ package jp.ac.meiji.igusso.sugar4j;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.ToString;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import lombok.NonNull;
 
 public final class Ipasir4jSolver implements SatSolver {
+  /*
+   * Buffer
+   */
+  private static final int BUFFER_SIZE = 4 * 1024 * 1024;
   private Ipasir4jLibrary ipasir4j;
   private Pointer solver;
   private int maxLiteral = 0;
+  private int[] bufferToAdd = new int[BUFFER_SIZE];
+  private int bufferToAddPointer = 0;
+  private int[] bufferToAssume = new int[BUFFER_SIZE];
+  private int bufferToAssumePointer = 0;
 
   private Ipasir4jSolver(@NonNull String solverName) {
     this.ipasir4j = Native.loadLibrary("ipasir4j", Ipasir4jLibrary.class);
@@ -27,15 +32,6 @@ public final class Ipasir4jSolver implements SatSolver {
   public static Ipasir4jSolver newInstance(@NonNull String solverName) {
     return new Ipasir4jSolver(solverName);
   }
-
-  /*
-   * Buffer
-   */
-  private static final int BUFFER_SIZE = 4 * 1024 * 1024;
-  private int[] bufferToAdd = new int[BUFFER_SIZE];
-  private int bufferToAddPointer = 0;
-  private int[] bufferToAssume = new int[BUFFER_SIZE];
-  private int bufferToAssumePointer = 0;
 
   private void flushBuffer() {
     ipasir4j.ipasir4j_add_all(solver, bufferToAddPointer, bufferToAdd);
@@ -119,22 +115,6 @@ public final class Ipasir4jSolver implements SatSolver {
     return res;
   }
 
-  private static class TimeoutCallback implements IpasirLibrary.IpasirCallback {
-    private final long period;
-    private final long beginTime;
-
-    TimeoutCallback(long period) {
-      this.period = period;
-      this.beginTime = System.currentTimeMillis();
-    }
-
-    @Override
-    public int callback(Pointer state) {
-      long currTime = System.currentTimeMillis();
-      return (currTime - beginTime) >= period * 1000L ? 1 : 0;
-    }
-  }
-
   @Override
   public List<Integer> solve(long timeout) {
     if (timeout <= 0) {
@@ -155,5 +135,21 @@ public final class Ipasir4jSolver implements SatSolver {
     }
     ipasir4j = null;
     solver = null;
+  }
+
+  private static class TimeoutCallback implements IpasirLibrary.IpasirCallback {
+    private final long period;
+    private final long beginTime;
+
+    TimeoutCallback(long period) {
+      this.period = period;
+      this.beginTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public int callback(Pointer state) {
+      long currTime = System.currentTimeMillis();
+      return (currTime - beginTime) >= period * 1000L ? 1 : 0;
+    }
   }
 }

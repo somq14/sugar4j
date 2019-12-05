@@ -1,15 +1,15 @@
 package jp.ac.meiji.igusso.sugar4j;
 
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import org.junit.After;
 import org.junit.Before;
-
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-
-import java.util.List;
-import java.util.Arrays;
-import java.util.Random;
+import org.junit.Test;
 
 public class IpasirSolverTest {
   SatSolver solver;

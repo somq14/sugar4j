@@ -1,14 +1,9 @@
 package jp.ac.meiji.igusso.sugar4j;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 import static jp.kobe_u.sugar.expression.Expression.create;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
-import org.junit.Test;
-import org.junit.Before;
-import org.junit.After;
-
-import jp.kobe_u.sugar.expression.Expression;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +11,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import jp.kobe_u.sugar.expression.Expression;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public final class Sugar4jTest {
   Sugar4j sugar4j;
@@ -274,7 +273,7 @@ public final class Sugar4jTest {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < terms.size(); j++) {
         int lit = rand.nextInt(v.length);
-        terms.set(j, rand.nextBoolean() ? v[lit]: v[lit].not());
+        terms.set(j, rand.nextBoolean() ? v[lit] : v[lit].not());
       }
       sugar4j.addConstraint(create(Expression.OR, terms));
     }
