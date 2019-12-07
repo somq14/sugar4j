@@ -7,28 +7,28 @@ import java.util.List;
  * SATソルバを表現するインタフェース.
  */
 public interface SatSolver extends AutoCloseable {
-  public static final int SAT = 10;
-  public static final int UNSAT = 20;
-  public static final int INTERRUPTED = 0;
+  int SAT = 10;
+  int UNSAT = 20;
+  int INTERRUPTED = 0;
 
   /**
    * SATソルバの名前を返す.
    */
-  public String getName();
+  String getName();
 
   /**
    * SATソルバに節を追加する.
    * 節は非ゼロ整数の列で表現する.
    * 例えば, x_1 or x_2 or ~x_3 は { 1, 2, -3 } で表現する.
    */
-  public void add(int... clause);
+  void add(int... clause);
 
   /**
    * SATソルバに節を追加する.
    * 節は非ゼロ整数の列で表現する.
    * 例えば, x_1 or x_2 or ~x_3 は { 1, 2, -3 } で表現する.
    */
-  public void add(Collection<Integer> clause);
+  void add(Collection<Integer> clause);
 
   /**
    * SATソルバに変数への割り当てを仮定させる.
@@ -36,7 +36,7 @@ public interface SatSolver extends AutoCloseable {
    * 例えば, assume(-1)を呼び出すと, SATソルバはx_1 = 0の仮定の元, 探索を行う.
    * 追加した仮定は一度solveメソッドを呼び出すと, リセットされることに注意せよ.
    */
-  public void assume(int literal);
+  void assume(int literal);
 
   /**
    * SATソルバに現在の問題を解かせる.
@@ -45,7 +45,7 @@ public interface SatSolver extends AutoCloseable {
    * x_iに1を割り当てるときはリストの第i要素はiであり,
    * x_iに0を割り当てるときはリストの第i要素は-iである.
    */
-  public List<Integer> solve();
+  List<Integer> solve();
 
   /**
    * SATソルバにタイムアウト付きで現在の問題を解かせる.
@@ -56,10 +56,11 @@ public interface SatSolver extends AutoCloseable {
    * タイムアウトの時間の単位は秒である.
    * 0以下の値はタイムアウトなしを意味する.
    */
-  public List<Integer> solve(long timeout);
+  List<Integer> solve(long timeout);
 
   /**
    * このソルバの資源を開放する.
    */
-  @Override public void close();
+  @Override
+  void close();
 }

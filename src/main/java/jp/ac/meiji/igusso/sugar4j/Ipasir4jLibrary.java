@@ -7,9 +7,9 @@ import com.sun.jna.Pointer;
 // Java CHECKSTYLE:OFF JavadocParagraph
 // Java CHECKSTYLE:OFF ParameterName
 public interface Ipasir4jLibrary extends Library {
-  public static final int SAT = 10;
-  public static final int UNSAT = 20;
-  public static final int INTERRUPTED = 0;
+  int SAT = 10;
+  int UNSAT = 20;
+  int INTERRUPTED = 0;
 
   Pointer ipasir4j_init(String solver_name);
 

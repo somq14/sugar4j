@@ -2,21 +2,6 @@ package jp.ac.meiji.igusso.sugar4j;
 
 import static jp.kobe_u.sugar.expression.Expression.create;
 
-import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.converter.Converter;
-import jp.kobe_u.sugar.converter.Simplifier;
-import jp.kobe_u.sugar.csp.BooleanVariable;
-import jp.kobe_u.sugar.csp.CSP;
-import jp.kobe_u.sugar.csp.IntegerDomain;
-import jp.kobe_u.sugar.csp.IntegerVariable;
-import jp.kobe_u.sugar.encoder.Encoder;
-import jp.kobe_u.sugar.encoder.FileProblem;
-import jp.kobe_u.sugar.encoder.FileProblem;
-import jp.kobe_u.sugar.expression.Expression;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.ToString;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,6 +13,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.converter.Converter;
+import jp.kobe_u.sugar.converter.Simplifier;
+import jp.kobe_u.sugar.csp.BooleanVariable;
+import jp.kobe_u.sugar.csp.CSP;
+import jp.kobe_u.sugar.csp.IntegerDomain;
+import jp.kobe_u.sugar.csp.IntegerVariable;
+import jp.kobe_u.sugar.encoder.Encoder;
+import jp.kobe_u.sugar.expression.Expression;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
 
 @ToString
 @EqualsAndHashCode
@@ -191,23 +189,6 @@ final class Sugar4jImpl implements Sugar4j {
     }
   }
 
-  @ToString
-  @EqualsAndHashCode
-  private static class SolutionImpl implements Solution {
-    @Getter private final boolean sat;
-    @Getter private final boolean timeout;
-    @Getter private final Map<Expression, Boolean> boolMap;
-    @Getter private final Map<Expression, Integer> intMap;
-
-    SolutionImpl(boolean sat, boolean timeout, Map<Expression, Boolean> boolMap,
-        Map<Expression, Integer> intMap) {
-      this.sat = sat;
-      this.timeout = timeout;
-      this.boolMap = Collections.unmodifiableMap(boolMap);
-      this.intMap = Collections.unmodifiableMap(intMap);
-    }
-  }
-
   @Override
   public void update() {
     try {
@@ -297,5 +278,26 @@ final class Sugar4jImpl implements Sugar4j {
   public int getSatVariablesCount() {
     update();
     return encoder.getSatVariablesCount();
+  }
+
+  @ToString
+  @EqualsAndHashCode
+  private static class SolutionImpl implements Solution {
+    @Getter
+    private final boolean sat;
+    @Getter
+    private final boolean timeout;
+    @Getter
+    private final Map<Expression, Boolean> boolMap;
+    @Getter
+    private final Map<Expression, Integer> intMap;
+
+    SolutionImpl(boolean sat, boolean timeout, Map<Expression, Boolean> boolMap,
+                 Map<Expression, Integer> intMap) {
+      this.sat = sat;
+      this.timeout = timeout;
+      this.boolMap = Collections.unmodifiableMap(boolMap);
+      this.intMap = Collections.unmodifiableMap(intMap);
+    }
   }
 }

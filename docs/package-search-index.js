@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"jp.ac.meiji.igusso.sugar4j","h":"","u":""}]
